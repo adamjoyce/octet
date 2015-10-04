@@ -147,7 +147,7 @@ namespace octet {
     enum {
       num_sound_sources = 8,
       num_rows = 5,
-      num_cols = 10,
+      num_cols = 5,
       num_missiles = 2,
       num_bombs = 2,
       num_borders = 4,
