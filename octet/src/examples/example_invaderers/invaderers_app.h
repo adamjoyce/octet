@@ -1,6 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
 // (C) Andy Thomason 2012-2014
+// (C) Adam Joyce
 //
 // Modular Framework for OpenGLES2 rendering on multiple platforms.
 //
@@ -239,15 +240,28 @@ namespace octet {
     // use the keyboard to move the ship
     void move_ship() {
       const float ship_speed = 0.05f;
-      // left and right arrows
-      if (is_key_down(key_left)) {
+      // down, up, left, right arrows
+      if (is_key_down(key_down)) {
+        sprites[ship_sprite].translate(0, -ship_speed);
+        if (sprites[ship_sprite].collides_with(sprites[first_border_sprite + 0])) {
+          sprites[ship_sprite].translate(0, +ship_speed);
+        }
+      }
+      else if (is_key_down(key_up)) {
+        sprites[ship_sprite].translate(0, +ship_speed);
+        if (sprites[ship_sprite].collides_with(sprites[first_border_sprite + 1])) {
+          sprites[ship_sprite].translate(0, -ship_speed);
+        }
+      }
+      else if (is_key_down(key_left)) {
         sprites[ship_sprite].translate(-ship_speed, 0);
-        if (sprites[ship_sprite].collides_with(sprites[first_border_sprite+2])) {
+        if (sprites[ship_sprite].collides_with(sprites[first_border_sprite + 2])) {
           sprites[ship_sprite].translate(+ship_speed, 0);
         }
-      } else if (is_key_down(key_right)) {
+      }
+      else if (is_key_down(key_right)) {
         sprites[ship_sprite].translate(+ship_speed, 0);
-        if (sprites[ship_sprite].collides_with(sprites[first_border_sprite+3])) {
+        if (sprites[ship_sprite].collides_with(sprites[first_border_sprite + 3])) {
           sprites[ship_sprite].translate(-ship_speed, 0);
         }
       }
