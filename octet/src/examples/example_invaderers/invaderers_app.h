@@ -253,7 +253,7 @@ namespace octet {
           sprites[ship_sprite].translate(0, -ship_speed);
         }
       }
-      else if (is_key_down(key_left)) {
+      if (is_key_down(key_left)) {
         sprites[ship_sprite].translate(-ship_speed, 0);
         if (sprites[ship_sprite].collides_with(sprites[first_border_sprite + 2])) {
           sprites[ship_sprite].translate(+ship_speed, 0);
