@@ -359,7 +359,7 @@ namespace octet {
           invaderer.is_enabled() = false;
           invaderer.translate(20, 0);
           on_hit_invaderer();
-          sprites[ship_sprite].scale(1.01f, 1.01f);
+          sprites[ship_sprite].scale(1.02f, 1.02f);
         }
       }
     }
