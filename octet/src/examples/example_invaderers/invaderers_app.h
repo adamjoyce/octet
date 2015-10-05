@@ -311,6 +311,7 @@ class invaderers_app : public octet::app {
 
     GLuint invaderer = resource_dict::get_texture_handle(GL_RGB, "#ff0000");
     for (int i = 0; i != num_invaderers; ++i) {
+      // todo: seed randomizer to vary inital values
       float x = randomizer.get(-2.75f, 2.75f);
       float y = randomizer.get(-2.75f, 2.75f);
       assert(first_invaderer_sprite + i <= last_invaderer_sprite);
