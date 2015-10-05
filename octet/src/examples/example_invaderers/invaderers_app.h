@@ -103,6 +103,13 @@ namespace octet {
       modelToWorld.translate(x, y, 0);
     }
 
+    // scale the object
+    void scale(float x, float y) {
+      modelToWorld.scale(x, y, 0);
+      halfWidth *= x;
+      halfHeight *= y;
+    }
+
     // position the object relative to another.
     void set_relative(sprite &rhs, float x, float y) {
       modelToWorld = rhs.modelToWorld;
@@ -352,6 +359,7 @@ namespace octet {
           invaderer.is_enabled() = false;
           invaderer.translate(20, 0);
           on_hit_invaderer();
+          sprites[ship_sprite].scale(1.1f, 1.1f);
         }
       }
     }
