@@ -121,18 +121,8 @@ class sprite {
 
     // both distances have to be under the sum of the halfwidths
     // for a collision
-    return
-      (fabsf(dx) < halfWidth + rhs.halfWidth) &&
-      (fabsf(dy) < halfHeight + rhs.halfHeight)
-    ;
-  }
-
-  bool is_above(const sprite &rhs, float margin) const {
-    float dx = rhs.modelToWorld[3][0] - modelToWorld[3][0];
-
-    return
-      (fabsf(dx) < halfWidth + margin)
-    ;
+    return (fabsf(dx) < halfWidth + rhs.halfWidth) &&
+           (fabsf(dy) < halfHeight + rhs.halfHeight);
   }
 
   bool &is_enabled() {
@@ -150,12 +140,8 @@ class invaderers_app : public octet::app {
 
   enum {
     num_sound_sources = 8,
-    num_rows = 5,
-    num_cols = 5,
-    num_missiles = 2,
-    num_bombs = 2,
     num_borders = 4,
-    num_invaderers = num_rows * num_cols,
+    num_invaderers = 1,
 
     // sprite definitions
     ship_sprite = 0,
@@ -164,22 +150,11 @@ class invaderers_app : public octet::app {
     first_invaderer_sprite,
     last_invaderer_sprite = first_invaderer_sprite + num_invaderers - 1,
 
-    first_missile_sprite,
-    last_missile_sprite = first_missile_sprite + num_missiles - 1,
-
-    first_bomb_sprite,
-    last_bomb_sprite = first_bomb_sprite + num_bombs - 1,
-
     first_border_sprite,
     last_border_sprite = first_border_sprite + num_borders - 1,
 
     num_sprites,
-
   };
-
-  // timers for missiles and bombs
-  /*int missiles_disabled;
-  int bombs_disabled;*/
 
   // accounting for bad guys
   int live_invaderers;
@@ -188,9 +163,6 @@ class invaderers_app : public octet::app {
   // game state
   bool game_over;
   int score;
-
-  // speed of enemy
-  //float invader_velocity;
 
   // sounds
   ALuint whoosh;
@@ -220,9 +192,7 @@ class invaderers_app : public octet::app {
 
     live_invaderers--;
     score++;
-    /*if (live_invaderers == 4) {
-      invader_velocity *= 4;
-    } else*/
+
     if (live_invaderers == 0) {
       game_over = true;
       sprites[game_over_sprite].translate(-20, 0);
@@ -230,7 +200,7 @@ class invaderers_app : public octet::app {
   }
 
   // called when we are hit
-  /*void on_hit_ship() {
+  void on_hit_ship() {
     ALuint source = get_sound_source();
     alSourcei(source, AL_BUFFER, bang);
     alSourcePlay(source);
@@ -239,7 +209,7 @@ class invaderers_app : public octet::app {
       game_over = true;
       sprites[game_over_sprite].translate(-20, 0);
     }
-  }*/
+  }
 
   // use the keyboard to move the ship
   void move_ship() {
@@ -270,139 +240,18 @@ class invaderers_app : public octet::app {
     }   
   }
 
-  // fire button (space)
-  /*void fire_missiles() {
-    if (missiles_disabled) {
-      --missiles_disabled;
-    } else if (is_key_going_down(' ')) {
-      // find a missile
-      for (int i = 0; i != num_missiles; ++i) {
-        if (!sprites[first_missile_sprite+i].is_enabled()) {
-          sprites[first_missile_sprite+i].set_relative(sprites[ship_sprite], 0, 0.5f);
-          sprites[first_missile_sprite+i].is_enabled() = true;
-          missiles_disabled = 5;
-          ALuint source = get_sound_source();
-          alSourcei(source, AL_BUFFER, whoosh);
-          alSourcePlay(source);
-          break;
-        }
-      }
-    }
-  }*/
-
-  // pick and invader and fire a bomb
-  /*void fire_bombs() {
-    if (bombs_disabled) {
-      --bombs_disabled;
-    } else {
-      // find an invaderer
-      sprite &ship = sprites[ship_sprite];
-      for (int j = randomizer.get(0, num_invaderers); j < num_invaderers; ++j) {
-        sprite &invaderer = sprites[first_invaderer_sprite+j];
-        if (invaderer.is_enabled() && invaderer.is_above(ship, 0.3f)) {
-          // find a bomb
-          for (int i = 0; i != num_bombs; ++i) {
-            if (!sprites[first_bomb_sprite+i].is_enabled()) {
-              sprites[first_bomb_sprite+i].set_relative(invaderer, 0, -0.25f);
-              sprites[first_bomb_sprite+i].is_enabled() = true;
-              bombs_disabled = 30;
-              ALuint source = get_sound_source();
-              alSourcei(source, AL_BUFFER, whoosh);
-              alSourcePlay(source);
-              return;
-            }
-          }
-          return;
-        }
-      }
-    }
-  }*/
-
-  // animate the missiles
-  /*void move_missiles() {
-    const float missile_speed = 0.3f;
-    for (int i = 0; i != num_missiles; ++i) {
-      sprite &missile = sprites[first_missile_sprite+i];
-      if (missile.is_enabled()) {
-        missile.translate(0, missile_speed);
-        for (int j = 0; j != num_invaderers; ++j) {
-          sprite &invaderer = sprites[first_invaderer_sprite+j];
-          if (invaderer.is_enabled() && missile.collides_with(invaderer)) {
-            invaderer.is_enabled() = false;
-            invaderer.translate(20, 0);
-            missile.is_enabled() = false;
-            missile.translate(20, 0);
-            on_hit_invaderer();
-
-            goto next_missile;
-          }
-        }
-        if (missile.collides_with(sprites[first_border_sprite+1])) {
-          missile.is_enabled() = false;
-          missile.translate(20, 0);
-        }
-      }
-    next_missile:;
-    }
-  }*/
-
   // deal with collided invaderer and scale player
   void collide_invaderer() {
     for (int i = 0; i != num_invaderers; ++i) {
       sprite &invaderer = sprites[first_invaderer_sprite+i];
-      if (invaderer.is_enabled() && invaderer.collides_with(sprites[ship_sprite])) {
+      if (invaderer.is_enabled() && sprites[ship_sprite].collides_with(invaderer)) {
         invaderer.is_enabled() = false;
         invaderer.translate(20, 0);
         on_hit_invaderer();
-        sprites[ship_sprite].scale(1.02f, 1.02f);
+        sprites[ship_sprite].scale(1.01f, 1.01f);
       }
     }
   }
-
-  // animate the bombs
-  /*void move_bombs() {
-    const float bomb_speed = 0.2f;
-    for (int i = 0; i != num_bombs; ++i) {
-      sprite &bomb = sprites[first_bomb_sprite+i];
-      if (bomb.is_enabled()) {
-        bomb.translate(0, -bomb_speed);
-        if (bomb.collides_with(sprites[ship_sprite])) {
-          bomb.is_enabled() = false;
-          bomb.translate(20, 0);
-          bombs_disabled = 50;
-          on_hit_ship();
-          goto next_bomb;
-        }
-        if (bomb.collides_with(sprites[first_border_sprite+0])) {
-          bomb.is_enabled() = false;
-          bomb.translate(20, 0);
-        }
-      }
-    next_bomb:;
-    }
-  }*/
-
-  // move the array of enemies
-  void move_invaders(float dx, float dy) {
-    for (int j = 0; j != num_invaderers; ++j) {
-      sprite &invaderer = sprites[first_invaderer_sprite+j];
-      if (invaderer.is_enabled()) {
-        invaderer.translate(dx, dy);
-      }
-    }
-  }
-
-  // check if any invaders hit the sides.
-  bool invaders_collide(sprite &border) {
-    for (int j = 0; j != num_invaderers; ++j) {
-      sprite &invaderer = sprites[first_invaderer_sprite+j];
-      if (invaderer.is_enabled() && invaderer.collides_with(border)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
 
   void draw_text(texture_shader &shader, float x, float y, float scale, const char *text) {
     mat4t modelToWorld;
@@ -461,13 +310,11 @@ class invaderers_app : public octet::app {
     sprites[game_over_sprite].init(GameOver, 20, 0, 3, 1.5f);
 
     GLuint invaderer = resource_dict::get_texture_handle(GL_RGB, "#ff0000");
-    for (int j = 0; j != num_rows; ++j) {
-      for (int i = 0; i != num_cols; ++i) {
-        assert(first_invaderer_sprite + i + j*num_cols <= last_invaderer_sprite);
-        sprites[first_invaderer_sprite + i + j*num_cols].init(
-          invaderer, ((float)i - num_cols * 0.5f) * 0.5f, 2.50f - ((float)j * 0.5f), 0.25f, 0.25f
-        );
-      }
+    for (int i = 0; i != num_invaderers; ++i) {
+      float x = randomizer.get(-2.75f, 2.75f);
+      float y = randomizer.get(-2.75f, 2.75f);
+      assert(first_invaderer_sprite + i <= last_invaderer_sprite);
+      sprites[first_invaderer_sprite + i].init(invaderer, x, y, 0.25f, 0.25f);
     }
 
     // set the border to white for clarity
@@ -477,22 +324,6 @@ class invaderers_app : public octet::app {
     sprites[first_border_sprite+2].init(white, -3, 0, 0.2f, 6);
     sprites[first_border_sprite+3].init(white, 3,  0, 0.2f, 6);
 
-    // use the missile texture
-    /*GLuint missile = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/missile.gif");
-    for (int i = 0; i != num_missiles; ++i) {
-      // create missiles off-screen
-      sprites[first_missile_sprite+i].init(missile, 20, 0, 0.0625f, 0.25f);
-      sprites[first_missile_sprite+i].is_enabled() = false;
-    }*/
-
-    // use the bomb texture
-    /*GLuint bomb = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/bomb.gif");
-    for (int i = 0; i != num_bombs; ++i) {
-      // create bombs off-screen
-      sprites[first_bomb_sprite+i].init(bomb, 20, 0, 0.0625f, 0.25f);
-      sprites[first_bomb_sprite+i].is_enabled() = false;
-    }*/
-
     // sounds
     whoosh = resource_dict::get_sound_handle(AL_FORMAT_MONO16, "assets/invaderers/whoosh.wav");
     bang = resource_dict::get_sound_handle(AL_FORMAT_MONO16, "assets/invaderers/bang.wav");
@@ -500,9 +331,6 @@ class invaderers_app : public octet::app {
     alGenSources(num_sound_sources, sources);
 
     // sundry counters and game state.
-    //missiles_disabled = 0;
-    //bombs_disabled = 50;
-    //invader_velocity = 0.01f;
     live_invaderers = num_invaderers;
     num_lives = 3;
     game_over = false;
@@ -518,22 +346,6 @@ class invaderers_app : public octet::app {
     move_ship();
     
     collide_invaderer();
-
-    //fire_missiles();
-
-    //fire_bombs();
-
-    //move_missiles();
-
-    //move_bombs();
-
-    //move_invaders(invader_velocity, 0);
-
-    /*sprite &border = sprites[first_border_sprite+(invader_velocity < 0 ? 2 : 3)];
-    if (invaders_collide(border)) {
-      invader_velocity = -invader_velocity;
-      move_invaders(invader_velocity, -0.1f);
-    }*/
   }
 
   // this is called to draw the world
