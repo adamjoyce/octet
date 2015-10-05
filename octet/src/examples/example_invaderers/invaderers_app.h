@@ -1,7 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
-// (C) Andy Thomason 2012-2014
-// (C) Adam Joyce
+// (C) Andy Thomason and Adam Joyce 2012-2014
 //
 // Modular Framework for OpenGLES2 rendering on multiple platforms.
 //
@@ -211,15 +210,16 @@ namespace octet {
 
     // called when we hit an enemy
     void on_hit_invaderer() {
-      ALuint source = get_sound_source();
+      /*ALuint source = get_sound_source();
       alSourcei(source, AL_BUFFER, bang);
-      alSourcePlay(source);
+      alSourcePlay(source);*/
 
       live_invaderers--;
       score++;
-      if (live_invaderers == 4) {
+      /*if (live_invaderers == 4) {
         invader_velocity *= 4;
-      } else if (live_invaderers == 0) {
+      } else*/
+      if (live_invaderers == 0) {
         game_over = true;
         sprites[game_over_sprite].translate(-20, 0);
       }
@@ -240,31 +240,32 @@ namespace octet {
     // use the keyboard to move the ship
     void move_ship() {
       const float ship_speed = 0.05f;
-      // down, up, left, right arrows
+      // down and up arrows
       if (is_key_down(key_down)) {
         sprites[ship_sprite].translate(0, -ship_speed);
-        if (sprites[ship_sprite].collides_with(sprites[first_border_sprite + 0])) {
+        if (sprites[ship_sprite].collides_with(sprites[first_border_sprite+0])) {
           sprites[ship_sprite].translate(0, +ship_speed);
         }
       }
       else if (is_key_down(key_up)) {
         sprites[ship_sprite].translate(0, +ship_speed);
-        if (sprites[ship_sprite].collides_with(sprites[first_border_sprite + 1])) {
+        if (sprites[ship_sprite].collides_with(sprites[first_border_sprite+1])) {
           sprites[ship_sprite].translate(0, -ship_speed);
         }
       }
+      // left and right arrows
       if (is_key_down(key_left)) {
         sprites[ship_sprite].translate(-ship_speed, 0);
-        if (sprites[ship_sprite].collides_with(sprites[first_border_sprite + 2])) {
+        if (sprites[ship_sprite].collides_with(sprites[first_border_sprite+2])) {
           sprites[ship_sprite].translate(+ship_speed, 0);
         }
       }
       else if (is_key_down(key_right)) {
         sprites[ship_sprite].translate(+ship_speed, 0);
-        if (sprites[ship_sprite].collides_with(sprites[first_border_sprite + 3])) {
+        if (sprites[ship_sprite].collides_with(sprites[first_border_sprite+3])) {
           sprites[ship_sprite].translate(-ship_speed, 0);
         }
-      }
+      }   
     }
 
     // fire button (space)
@@ -340,6 +341,18 @@ namespace octet {
           }
         }
       next_missile:;
+      }
+    }
+
+    // check for ship collision with invaderer.
+    void collide_invaderer() {
+      for (int i = 0; i != num_invaderers; ++i) {
+        sprite &invaderer = sprites[first_invaderer_sprite+i];
+        if (invaderer.is_enabled() && invaderer.collides_with(sprites[ship_sprite])) {
+          invaderer.is_enabled() = false;
+          invaderer.translate(20, 0);
+          on_hit_invaderer();
+        }
       }
     }
 
@@ -444,7 +457,7 @@ namespace octet {
       GLuint GameOver = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/GameOver.gif");
       sprites[game_over_sprite].init(GameOver, 20, 0, 3, 1.5f);
 
-      GLuint invaderer = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/invaderer.gif");
+      GLuint invaderer = resource_dict::get_texture_handle(GL_RGB, "#ff0000");
       for (int j = 0; j != num_rows; ++j) {
         for (int i = 0; i != num_cols; ++i) {
           assert(first_invaderer_sprite + i + j*num_cols <= last_invaderer_sprite);
@@ -462,26 +475,26 @@ namespace octet {
       sprites[first_border_sprite+3].init(white, 3,  0, 0.2f, 6);
 
       // use the missile texture
-      GLuint missile = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/missile.gif");
+      /*GLuint missile = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/missile.gif");
       for (int i = 0; i != num_missiles; ++i) {
         // create missiles off-screen
         sprites[first_missile_sprite+i].init(missile, 20, 0, 0.0625f, 0.25f);
         sprites[first_missile_sprite+i].is_enabled() = false;
-      }
+      }*/
 
       // use the bomb texture
-      GLuint bomb = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/bomb.gif");
+      /*GLuint bomb = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/bomb.gif");
       for (int i = 0; i != num_bombs; ++i) {
         // create bombs off-screen
         sprites[first_bomb_sprite+i].init(bomb, 20, 0, 0.0625f, 0.25f);
         sprites[first_bomb_sprite+i].is_enabled() = false;
-      }
+      }*/
 
       // sounds
-      whoosh = resource_dict::get_sound_handle(AL_FORMAT_MONO16, "assets/invaderers/whoosh.wav");
+      /*whoosh = resource_dict::get_sound_handle(AL_FORMAT_MONO16, "assets/invaderers/whoosh.wav");
       bang = resource_dict::get_sound_handle(AL_FORMAT_MONO16, "assets/invaderers/bang.wav");
       cur_source = 0;
-      alGenSources(num_sound_sources, sources);
+      alGenSources(num_sound_sources, sources);*/
 
       // sundry counters and game state.
       missiles_disabled = 0;
@@ -501,21 +514,23 @@ namespace octet {
 
       move_ship();
 
-      fire_missiles();
+      collide_invaderer();
 
-      fire_bombs();
+      //fire_missiles();
 
-      move_missiles();
+      //fire_bombs();
 
-      move_bombs();
+      //move_missiles();
 
-      move_invaders(invader_velocity, 0);
+      //move_bombs();
 
-      sprite &border = sprites[first_border_sprite+(invader_velocity < 0 ? 2 : 3)];
+      //move_invaders(invader_velocity, 0);
+
+      /*sprite &border = sprites[first_border_sprite+(invader_velocity < 0 ? 2 : 3)];
       if (invaders_collide(border)) {
         invader_velocity = -invader_velocity;
         move_invaders(invader_velocity, -0.1f);
-      }
+      }*/
     }
 
     // this is called to draw the world
