@@ -351,7 +351,7 @@ namespace octet {
       }
     }*/
 
-    // check for ship collision with invaderer.
+    // deal with collided invaderer and scale player
     void collide_invaderer() {
       for (int i = 0; i != num_invaderers; ++i) {
         sprite &invaderer = sprites[first_invaderer_sprite+i];
@@ -359,7 +359,7 @@ namespace octet {
           invaderer.is_enabled() = false;
           invaderer.translate(20, 0);
           on_hit_invaderer();
-          sprites[ship_sprite].scale(1.1f, 1.1f);
+          sprites[ship_sprite].scale(1.01f, 1.01f);
         }
       }
     }
@@ -459,7 +459,7 @@ namespace octet {
 
       font_texture = resource_dict::get_texture_handle(GL_RGBA, "assets/big_0.gif");
 
-      GLuint ship = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/ship.gif");
+      GLuint ship = resource_dict::get_texture_handle(GL_RGB, "#7cfc00");
       sprites[ship_sprite].init(ship, 0, -2.75f, 0.25f, 0.25f);
 
       GLuint GameOver = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/GameOver.gif");
