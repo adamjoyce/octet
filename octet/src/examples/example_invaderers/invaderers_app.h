@@ -104,11 +104,11 @@ class sprite {
   }
 
   // scale the object
-  void scale(float x, float y) {
+  /*void scale(float x, float y) {
     modelToWorld.scale(x, y, 0);
     halfWidth *= x;
     halfHeight *= y;
-  }
+  }*/
 
   // position the object relative to another.
   void set_relative(sprite &rhs, float x, float y) {
@@ -144,7 +144,8 @@ class invaderers_app : public octet::app {
   enum {
     num_sound_sources = 8,
     num_borders = 4,
-    num_invaderers = 50,
+    num_invaderers = 1,
+    num_bombs = 10,
 
     // sprite definitions
     ship_sprite = 0,
@@ -153,11 +154,17 @@ class invaderers_app : public octet::app {
     first_invaderer_sprite,
     last_invaderer_sprite = first_invaderer_sprite + num_invaderers - 1,
 
+    first_bomb_sprite,
+    last_bomb_sprite = first_bomb_sprite + num_bombs - 1,
+
     first_border_sprite,
     last_border_sprite = first_border_sprite + num_borders - 1,
 
     num_sprites,
   };
+
+  // timer for bombs
+  int bombs_disabled;
 
   // accounting for bad guys
   int live_invaderers;
@@ -175,6 +182,9 @@ class invaderers_app : public octet::app {
 
   // big array of sprites
   sprite sprites[num_sprites];
+
+  // random number generator
+  class random randomizer;
 
   // a texture for our text
   GLuint font_texture;
@@ -240,6 +250,63 @@ class invaderers_app : public octet::app {
     }   
   }
 
+  // pick an invaderer and fire a bomb
+  void fire_bombs() {
+    if (bombs_disabled) {
+      --bombs_disabled;
+    }
+    else {
+      // find an invaderer
+      sprite &ship = sprites[ship_sprite];
+      for (int j = randomizer.get(0, num_invaderers); j < num_invaderers; ++j) {
+        sprite &invaderer = sprites[first_invaderer_sprite + j];
+        if (invaderer.is_enabled()) {
+          // find a bomb
+          for (int i = 0; i != num_bombs; ++i) {
+            if (!sprites[first_bomb_sprite + i].is_enabled()) {
+              sprites[first_bomb_sprite + i].set_relative(invaderer, 0, 0);
+              sprites[first_bomb_sprite + i].is_enabled() = true;
+              bombs_disabled = 0;
+              ALuint source = get_sound_source();
+              alSourcei(source, AL_BUFFER, whoosh);
+              alSourcePlay(source);
+              return;
+            }
+          }
+          return;
+        }
+      }
+    }
+  }
+
+  // animate the bombs
+  void move_bombs() {
+    //const float bomb_speed = 0.2f;
+    for (int i = 0; i != num_bombs; ++i) {
+      float x = random_float(-0.2f, 0.2f);
+      float y = random_float(-0.2f, 0.2f);
+      sprite &bomb = sprites[first_bomb_sprite + i];
+      if (bomb.is_enabled()) {
+        bomb.translate(x, y);
+        if (bomb.collides_with(sprites[ship_sprite])) {
+          bomb.is_enabled() = false;
+          bomb.translate(20, 0);
+          bombs_disabled = 0;
+          on_hit_ship();
+          goto next_bomb;
+        }
+        if ((bomb.collides_with(sprites[first_border_sprite+0])) ||
+            (bomb.collides_with(sprites[first_border_sprite+1])) ||
+            (bomb.collides_with(sprites[first_border_sprite+2])) ||
+            (bomb.collides_with(sprites[first_border_sprite+3]))) {
+          bomb.is_enabled() = false;
+          bomb.translate(20, 0);
+        }
+      }
+    next_bomb:;
+    }
+  }
+
   // deal with collided invaderer and scale player
   void collide_invaderer() {
     for (int i = 0; i != num_invaderers; ++i) {
@@ -248,7 +315,7 @@ class invaderers_app : public octet::app {
         invaderer.is_enabled() = false;
         invaderer.translate(20, 0);
         on_hit_invaderer();
-        sprites[ship_sprite].scale(1.02f, 1.02f);
+        //sprites[ship_sprite].scale(1.02f, 1.02f);
       }
     }
   }
@@ -343,6 +410,13 @@ class invaderers_app : public octet::app {
     sprites[first_border_sprite+2].init(white, -3, 0, 0.2f, 6);
     sprites[first_border_sprite+3].init(white, 3,  0, 0.2f, 6);
 
+    // use the bomb texture
+    GLuint bomb = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/bomb.gif");
+    for (int i = 0; i != num_bombs; ++i) {
+      // create bombs off-screen
+      sprites[first_bomb_sprite + i].init(bomb, 20, 0, 0.0625f, 0.25f);
+      sprites[first_bomb_sprite + i].is_enabled() = false;
+    }
     // sounds
     whoosh = resource_dict::get_sound_handle(AL_FORMAT_MONO16, "assets/invaderers/whoosh.wav");
     bang = resource_dict::get_sound_handle(AL_FORMAT_MONO16, "assets/invaderers/bang.wav");
@@ -350,8 +424,9 @@ class invaderers_app : public octet::app {
     alGenSources(num_sound_sources, sources);
 
     // sundry counters and game state.
+    bombs_disabled = 50;
     live_invaderers = num_invaderers;
-    num_lives = 3;
+    num_lives = 1;
     game_over = false;
     score = 0;
   }
@@ -363,6 +438,10 @@ class invaderers_app : public octet::app {
     }
 
     move_ship();
+
+    fire_bombs();
+
+    move_bombs();
     
     collide_invaderer();
   }
