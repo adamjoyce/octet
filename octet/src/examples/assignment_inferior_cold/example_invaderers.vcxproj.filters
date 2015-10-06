@@ -428,7 +428,6 @@
       <Filter>containers</Filter>
     </ClInclude>
     <ClInclude Include="example_invaderers.h" />
-    <ClInclude Include="inferior_cold.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\resources\mesh_builder.inl">
