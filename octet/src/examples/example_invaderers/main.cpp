@@ -15,7 +15,7 @@
 int main(int argc, char **argv) {
   // set up the platform.
   octet::app::init_all(argc, argv);
-
+  
   // our application.
   octet::invaderers_app app(argc, argv);
   app.init();

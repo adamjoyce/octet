@@ -145,7 +145,7 @@ class invaderers_app : public octet::app {
     num_sound_sources = 8,
     num_borders = 4,
     num_invaderers = 1,
-    num_bombs = 10,
+    num_bombs = 15,
 
     // sprite definitions
     ship_sprite = 0,
@@ -322,7 +322,7 @@ class invaderers_app : public octet::app {
 
   // random number generator
   float random_float(float min, float max) {
-    float random = ((float)rand() / (float)RAND_MAX);
+    float random = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
     float difference = max - min;
     float r = random * difference;
     return r + min;
@@ -384,23 +384,14 @@ class invaderers_app : public octet::app {
     GLuint GameOver = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/GameOver.gif");
     sprites[game_over_sprite].init(GameOver, 20, 0, 3, 1.5f);
 
+    //srand(time(NULL));
     GLuint invaderer = resource_dict::get_texture_handle(GL_RGB, "#ff0000");
-    srand(time(NULL));
     // todo: make this not an awful mess
     for (int i = 0; i != num_invaderers; ++i) {
-      float x = random_float(-2.75f, 2.75f);
-      float y = random_float(-2.75f, 2.75f);
+      //float x = random_float(-2.75f, 2.75f);
+      //float y = random_float(-2.75f, 2.75f);
       assert(first_invaderer_sprite + i <= last_invaderer_sprite);
-      sprites[first_invaderer_sprite+i].init(invaderer, x, y, 0.25f, 0.25f);
-
-      // sort out any overlapping invaderers
-      /*for (int j = 0; j != i; ++j) {
-        while (sprites[first_invaderer_sprite+i].collides_with(sprites[first_invaderer_sprite + j])) {
-          float x = random_float(-2.75f, 2.75f);
-          float y = random_float(-2.75f, 2.75f);
-          sprites[first_invaderer_sprite+i].init(invaderer, x, y, 0.25f, 0.25f);
-        }
-      }*/
+      sprites[first_invaderer_sprite+i].init(invaderer, 0, 0, 0.25f, 0.25f);
     }
 
     // set the border to white for clarity
@@ -417,6 +408,7 @@ class invaderers_app : public octet::app {
       sprites[first_bomb_sprite + i].init(bomb, 20, 0, 0.0625f, 0.25f);
       sprites[first_bomb_sprite + i].is_enabled() = false;
     }
+
     // sounds
     whoosh = resource_dict::get_sound_handle(AL_FORMAT_MONO16, "assets/invaderers/whoosh.wav");
     bang = resource_dict::get_sound_handle(AL_FORMAT_MONO16, "assets/invaderers/bang.wav");
