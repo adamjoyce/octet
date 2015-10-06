@@ -17,6 +17,9 @@
 //   Audio
 //
 
+#include <ctime>
+#include <cstdlib>
+
 namespace octet {
 class sprite {
   // where is our sprite (overkill for a 2D game!)
@@ -141,7 +144,7 @@ class invaderers_app : public octet::app {
   enum {
     num_sound_sources = 8,
     num_borders = 4,
-    num_invaderers = 1,
+    num_invaderers = 50,
 
     // sprite definitions
     ship_sprite = 0,
@@ -172,9 +175,6 @@ class invaderers_app : public octet::app {
 
   // big array of sprites
   sprite sprites[num_sprites];
-
-  // random number generator
-  class random randomizer;
 
   // a texture for our text
   GLuint font_texture;
@@ -248,9 +248,17 @@ class invaderers_app : public octet::app {
         invaderer.is_enabled() = false;
         invaderer.translate(20, 0);
         on_hit_invaderer();
-        sprites[ship_sprite].scale(1.01f, 1.01f);
+        sprites[ship_sprite].scale(1.02f, 1.02f);
       }
     }
+  }
+
+  // random number generator
+  float random_float(float min, float max) {
+    float random = ((float)rand() / (float)RAND_MAX);
+    float difference = max - min;
+    float r = random * difference;
+    return r + min;
   }
 
   void draw_text(texture_shader &shader, float x, float y, float scale, const char *text) {
@@ -310,12 +318,22 @@ class invaderers_app : public octet::app {
     sprites[game_over_sprite].init(GameOver, 20, 0, 3, 1.5f);
 
     GLuint invaderer = resource_dict::get_texture_handle(GL_RGB, "#ff0000");
+    srand(time(NULL));
+    // todo: make this not an awful mess
     for (int i = 0; i != num_invaderers; ++i) {
-      // todo: seed randomizer to vary inital values
-      float x = randomizer.get(-2.75f, 2.75f);
-      float y = randomizer.get(-2.75f, 2.75f);
+      float x = random_float(-2.75f, 2.75f);
+      float y = random_float(-2.75f, 2.75f);
       assert(first_invaderer_sprite + i <= last_invaderer_sprite);
-      sprites[first_invaderer_sprite + i].init(invaderer, x, y, 0.25f, 0.25f);
+      sprites[first_invaderer_sprite+i].init(invaderer, x, y, 0.25f, 0.25f);
+
+      // sort out any overlapping invaderers
+      /*for (int j = 0; j != i; ++j) {
+        while (sprites[first_invaderer_sprite+i].collides_with(sprites[first_invaderer_sprite + j])) {
+          float x = random_float(-2.75f, 2.75f);
+          float y = random_float(-2.75f, 2.75f);
+          sprites[first_invaderer_sprite+i].init(invaderer, x, y, 0.25f, 0.25f);
+        }
+      }*/
     }
 
     // set the border to white for clarity
