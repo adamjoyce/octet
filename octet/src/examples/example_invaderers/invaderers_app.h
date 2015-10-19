@@ -144,8 +144,8 @@ class invaderers_app : public octet::app {
   enum {
     num_sound_sources = 8,
     num_borders = 4,
-    num_invaderers = 1,
-    num_bombs = 15,
+    num_invaderers = 5,
+    num_bombs = 20,
 
     // sprite definitions
     ship_sprite = 0,
@@ -221,9 +221,9 @@ class invaderers_app : public octet::app {
     }
   }
 
+  float ship_speed = 0.1f;
   // use the keyboard to move the ship
   void move_ship() {
-    const float ship_speed = 0.05f;
     // down and up arrows
     if (is_key_down(key_down)) {
       sprites[ship_sprite].translate(0, -ship_speed);
@@ -315,7 +315,7 @@ class invaderers_app : public octet::app {
         invaderer.is_enabled() = false;
         invaderer.translate(20, 0);
         on_hit_invaderer();
-        //sprites[ship_sprite].scale(1.02f, 1.02f);
+        //sprites[ship_sprite].scale(2.0f, 2.0f);
       }
     }
   }
@@ -384,14 +384,14 @@ class invaderers_app : public octet::app {
     GLuint GameOver = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/GameOver.gif");
     sprites[game_over_sprite].init(GameOver, 20, 0, 3, 1.5f);
 
-    //srand(time(NULL));
+    srand(time(NULL));
     GLuint invaderer = resource_dict::get_texture_handle(GL_RGB, "#ff0000");
     // todo: make this not an awful mess
     for (int i = 0; i != num_invaderers; ++i) {
-      //float x = random_float(-2.75f, 2.75f);
-      //float y = random_float(-2.75f, 2.75f);
+      float x = random_float(-2.75f, 2.75f);
+      float y = random_float(-2.75f, 2.75f);
       assert(first_invaderer_sprite + i <= last_invaderer_sprite);
-      sprites[first_invaderer_sprite+i].init(invaderer, 0, 0, 0.25f, 0.25f);
+      sprites[first_invaderer_sprite+i].init(invaderer, x, y, 0.25f, 0.25f);
     }
 
     // set the border to white for clarity
@@ -418,7 +418,7 @@ class invaderers_app : public octet::app {
     // sundry counters and game state.
     bombs_disabled = 50;
     live_invaderers = num_invaderers;
-    num_lives = 1;
+    num_lives = 3;
     game_over = false;
     score = 0;
   }

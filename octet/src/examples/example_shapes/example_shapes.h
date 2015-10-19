@@ -35,9 +35,21 @@ namespace octet {
       mat.translate(0, 10, 0);
       app_scene->add_shape(mat, new mesh_box(vec3(2, 2, 2)), red, true);
 
+      //mat.loadIdentity();
+      //mat.translate( 3, 6, 0);
+      //app_scene->add_shape(mat, new mesh_cylinder(zcylinder(vec3(0, 0, 0), 2, 4)), blue, true);
+
       mat.loadIdentity();
-      mat.translate( 3, 6, 0);
-      app_scene->add_shape(mat, new mesh_cylinder(zcylinder(vec3(0, 0, 0), 2, 4)), blue, true);
+      mat.translate(3, 6, 0);
+      app_scene->add_shape(mat, new mesh_box(vec3(2, 2, 2)), blue, true);
+
+      mesh_instance *box0 = app_scene->get_mesh_instance(0);
+      mesh_instance *box1 = app_scene->get_mesh_instance(1);
+      btRigidBody *rbBox0 = box0->get_node()->get_rigid_body();
+      btRigidBody *rbBox1 = box1->get_node()->get_rigid_body();
+
+      btHingeConstraint *hinge = new btHingeConstraint(*rbBox0, *rbBox1, btVector3(0, 1, 0), btVector3(0, 0, 0), btVector3(0, 0, 1),
+                                                        btVector3(0, 0, 1), true);
 
       // ground
       mat.loadIdentity();

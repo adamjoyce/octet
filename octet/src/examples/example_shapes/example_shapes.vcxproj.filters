@@ -428,6 +428,7 @@
       <Filter>containers</Filter>
     </ClInclude>
     <ClInclude Include="example_shapes.h" />
+    <ClInclude Include="hello_bullet.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\resources\mesh_builder.inl">

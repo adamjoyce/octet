@@ -13,6 +13,7 @@
 #include "../../octet.h"
 
 #include "example_shapes.h"
+#include "hello_bullet.h"
 
 /// Create a box with octet
 int main(int argc, char **argv) {
@@ -20,7 +21,7 @@ int main(int argc, char **argv) {
   octet::app::init_all(argc, argv);
 
   // our application.
-  octet::example_shapes app(argc, argv);
+  octet::hello_bullet app(argc, argv);
   app.init();
 
   // open windows
