@@ -1,5 +1,5 @@
 // Learning bullet
-// Credit: http://bulletphysics.org/mediawiki-1.5.8/index.php/Hello_World
+// Acknowledgement: http://bulletphysics.org/mediawiki-1.5.8/index.php/Hello_World
 
 namespace octet {
   class hello_bullet : public app {

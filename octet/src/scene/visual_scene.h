@@ -656,6 +656,11 @@ namespace octet { namespace scene {
         debug_line_buffer[debug_in_ptr++ & debug_line_buffer.size()-1] = end;
       }
     }
+
+    /// Get dyanmics world.
+    btDynamicsWorld *get_dynamics_world() {
+      return world;
+    }
   };
 }}
 

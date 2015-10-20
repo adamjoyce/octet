@@ -48,9 +48,6 @@ namespace octet {
       btRigidBody *rbBox0 = box0->get_node()->get_rigid_body();
       btRigidBody *rbBox1 = box1->get_node()->get_rigid_body();
 
-      btHingeConstraint *hinge = new btHingeConstraint(*rbBox0, *rbBox1, btVector3(0, 1, 0), btVector3(0, 0, 0), btVector3(0, 0, 1),
-                                                        btVector3(0, 0, 1), true);
-
       // ground
       mat.loadIdentity();
       mat.translate(0, -1, 0);
