@@ -1,4 +1,4 @@
-// Rope bridge using Octet with Bullet physics.
+// Physics bridges using Octet with Bullet physics.
 // Author: Adam Joyce
 // Version: 2.3
 
@@ -13,21 +13,36 @@ namespace octet {
       bridge_height = 5,
       plank_num = 7,
       platform_num = 2,
-      plank_gap = 3,
+      hinge_plank_gap = 3,
+      spring_plank_gap = 3,
 
+      // position of the first hinge platform
       hinge_platform_x = -12,
       hinge_platform_y = bridge_height + 1,
-      hinge_platform_z = -2,
+      hinge_platform_z = -5,
+      // x position of the second hinge platform
+      hinge_platform2_x = hinge_platform_x + ((plank_num + 1) * hinge_plank_gap),
 
+      // position of the first spring platform
       spring_platform_x = -12,
       spring_platform_y = bridge_height + 1,
-      spring_platform_z = 2,
+      spring_platform_z = 10,
+      // x position of the second spring platform
+      spring_platform2_x = spring_platform_x + ((plank_num + 1) * spring_plank_gap),
 
-      first_hinge_platform = 0,
+      ground = 0,
+
+      first_hinge_platform,
       last_hinge_platform = first_hinge_platform + 1,
 
       first_hinge_plank,
       last_hinge_plank = first_hinge_plank + plank_num - 1,
+
+      first_spring_platform,
+      last_spring_platform = first_spring_platform + 1,
+
+      first_spring_plank,
+      last_spring_plank = first_spring_plank + plank_num - 1,
     };
 
   public:
@@ -46,15 +61,18 @@ namespace octet {
       app_scene->get_camera_instance(0)->get_node()->rotate(-45, vec3(1, 0, 0));
       btDynamicsWorld *dynamics_world = app_scene->get_dynamics_world();
 
-      // build the bridges
-      create_hinge_bridge();
-      create_spring_bridge();
-
       // ground
       material *ground_color = new material(vec4(0, 1, 0, 1));
       mat4t mat;
       mat.loadIdentity();
       app_scene->add_shape(mat, new mesh_box(vec3(200, 1, 200)), ground_color, false);
+      mesh_instances.push_back(app_scene->get_mesh_instance(ground));
+      rigid_bodies.push_back(mesh_instances[ground]->get_node()->get_rigid_body());
+
+
+      // build the bridges
+      create_hinge_bridge();
+      create_spring_bridge();
 
       /*// materials
       material *red = new material(vec4(1, 0, 0, 1));
@@ -143,13 +161,12 @@ namespace octet {
       rigid_bodies.push_back(mesh_instances[first_hinge_platform]->get_node()->get_rigid_body());
 
       // last platform
-      float new_x_position = hinge_platform_x + ((plank_num + 1) * 3);
-      create_platform(mat, platform_color, vec3(new_x_position, hinge_platform_y, hinge_platform_z), bridge_height);
+      create_platform(mat, platform_color, vec3(hinge_platform2_x, hinge_platform_y, hinge_platform_z), bridge_height);
       mesh_instances.push_back(app_scene->get_mesh_instance(last_hinge_platform));
       rigid_bodies.push_back(mesh_instances[last_hinge_platform]->get_node()->get_rigid_body());
 
       // place and hinge the first plank to the platform
-      vec3 plank_location = vec3(hinge_platform_x + plank_gap, hinge_platform_y + (bridge_height - 0.5f), hinge_platform_z);
+      vec3 plank_location = vec3(hinge_platform_x + hinge_plank_gap, hinge_platform_y + (bridge_height - 0.5f), hinge_platform_z);
       create_plank(mat, plank_color, true, plank_location);
       mesh_instances.push_back(app_scene->get_mesh_instance(first_hinge_plank));
       rigid_bodies.push_back(mesh_instances[first_hinge_plank]->get_node()->get_rigid_body());
@@ -162,7 +179,7 @@ namespace octet {
       // place and hinge the remaining planks
       int i = first_hinge_plank + 1;
       for (i; i <= last_hinge_plank; ++i) {
-        plank_location = vec3(plank_location[0] + plank_gap, plank_location[1], plank_location[2]); 
+        plank_location = vec3(plank_location[0] + hinge_plank_gap, plank_location[1], plank_location[2]); 
         create_plank(mat, plank_color, true, plank_location);
         mesh_instances.push_back(app_scene->get_mesh_instance(i));
         rigid_bodies.push_back(mesh_instances[i]->get_node()->get_rigid_body());
@@ -183,7 +200,39 @@ namespace octet {
     /// Assemble spring bridge.
     void create_spring_bridge() {
       material *platform_color = new material(vec4(1, 0, 0, 1));
-      material *plank_color = new material(vec4(0, 1, 0, 1));
+      material *plank_color = new material(vec4(1, 1, 0, 1));
+
+      // place the platforms
+      // first platform
+      mat4t mat;
+      create_platform(mat, platform_color, vec3(spring_platform_x, spring_platform_y, spring_platform_z), bridge_height);
+      mesh_instances.push_back(app_scene->get_mesh_instance(first_spring_platform));
+      rigid_bodies.push_back(app_scene->get_mesh_instance(first_spring_platform)->get_node()->get_rigid_body());
+
+      // last platform
+      create_platform(mat, platform_color, vec3(spring_platform2_x, spring_platform_y, spring_platform_z), bridge_height);
+      mesh_instances.push_back(app_scene->get_mesh_instance(last_spring_platform));
+      rigid_bodies.push_back(app_scene->get_mesh_instance(last_spring_platform)->get_node()->get_rigid_body());
+
+      btTransform frame_in_a, frame_in_b;
+      btGeneric6DofSpringConstraint *spring;
+      vec3 plank_location = vec3(spring_platform_x, spring_platform_y, spring_platform_z);
+      for (int i = 0; i <= 0/*last_spring_plank - first_spring_plank*/; ++i) {
+        float new_x_location = plank_location[0] + hinge_plank_gap;
+        plank_location = vec3(new_x_location, plank_location[1], plank_location[2]);
+        create_plank(mat, plank_color, true, plank_location);
+        mesh_instances.push_back(app_scene->get_mesh_instance(first_spring_plank + i));
+        rigid_bodies.push_back(mesh_instances[first_spring_plank+i]->get_node()->get_rigid_body());
+
+        frame_in_a = btTransform::getIdentity();
+        frame_in_a.setOrigin(btVector3(btScalar(0), btScalar(-10), btScalar(0)));
+        frame_in_b = btTransform::getIdentity();
+        frame_in_b.setOrigin(btVector3(btScalar(new_x_location), btScalar(0.5f), btScalar(spring_platform_z)));
+        spring = new btGeneric6DofSpringConstraint(*rigid_bodies[first_spring_plank+i], *rigid_bodies[ground], frame_in_a, frame_in_b, true);
+
+        spring->enableSpring(1, true);
+        app_scene->get_dynamics_world()->addConstraint(spring);
+      }
     }
 
     /// Called to draw the world.
@@ -194,7 +243,7 @@ namespace octet {
 
       // used to test spring
       if (is_key_down(key_space))
-        rigid_bodies[first_hinge_plank + (plank_num * 0.5f)]->applyForce(btVector3(0, 100, 0), btVector3(0, 0, 0));
+        rigid_bodies[first_spring_plank]->applyForce(btVector3(0, 100, 0), btVector3(0, 0, 0));
 
       // update matrices, assume 30fps
       app_scene->update(1.0f / 30);
