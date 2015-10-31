@@ -429,7 +429,7 @@
     </ClInclude>
     <ClInclude Include="example_shapes.h" />
     <ClInclude Include="hello_bullet.h" />
-    <ClInclude Include="rope_bridge.h" />
+    <ClInclude Include="physics_bridges.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\resources\mesh_builder.inl">

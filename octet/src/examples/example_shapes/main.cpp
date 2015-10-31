@@ -14,7 +14,7 @@
 
 #include "example_shapes.h"
 #include "hello_bullet.h"
-#include "rope_bridge.h"
+#include "physics_bridges.h"
 
 /// Create a box with octet
 int main(int argc, char **argv) {
@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
   octet::app::init_all(argc, argv);
 
   // our application.
-  octet::rope_bridge app(argc, argv);
+  octet::physics_bridges app(argc, argv);
   app.init();
 
   // open windows

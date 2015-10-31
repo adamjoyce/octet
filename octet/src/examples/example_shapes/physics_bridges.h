@@ -1,32 +1,47 @@
 // Rope bridge using Octet with Bullet physics.
-// Might also be a falling sphere...
+// Author: Adam Joyce
+// Version: 2.3
 
 namespace octet {
-  class rope_bridge : public app {
+  class physics_bridges : public app {
     // scene for drawing objects
     ref<visual_scene> app_scene;
     dynarray<mesh_instance*> mesh_instances;
     dynarray<btRigidBody*> rigid_bodies;
 
+    enum {
+      bridge_height = 5,
+      plank_num = 7,
+      platform_num = 2,
+      plank_gap = 3,
+
+      hinge_platform_x = -12,
+      hinge_platform_y = bridge_height + 1,
+      hinge_platform_z = 0,
+
+      first_hinge_platform = 0,
+      last_hinge_platform = first_hinge_platform + 1,
+
+      first_hinge_plank,
+      last_hinge_plank = first_hinge_plank + plank_num - 1,
+    };
+
   public:
-    rope_bridge(int argc, char **argv) : app(argc, argv) {
+    physics_bridges(int argc, char **argv) : app(argc, argv) {
     }
 
-    ~rope_bridge() {
+    ~physics_bridges() {
     }
 
     /// Called once OpenGL is initialised.
     void app_init() {
       app_scene = new visual_scene();
       app_scene->create_default_camera_and_lights();
-      app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, 5, 0));
+      app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, 40, 0));
+      app_scene->get_camera_instance(0)->get_node()->rotate(-45, vec3(1, 0, 0));
       btDynamicsWorld *dynamics_world = app_scene->get_dynamics_world();
 
-      const int bridge_height = 3;
-      const int bridge_length_in_planks = 7;
-      const vec3 starting_platform_location(-12, 4, 0);
-
-      create_bridge(app_scene, bridge_height, bridge_length_in_planks, starting_platform_location);
+      create_hinge_bridge(app_scene);
 
       // ground
       material *ground_color = new material(vec4(0, 1, 0, 1));
@@ -101,64 +116,59 @@ namespace octet {
       app_scene->add_shape(mat, new mesh_box(vec3(1, 0.5f, 2)), color, is_dynamic);
     }
 
-    /// Assemble the bridge.
-    void create_bridge(ref<visual_scene> &app_scene, int height, int length_in_planks, vec3 start_location) {
+    /// Assemble the hinge bridge.
+    void create_hinge_bridge(ref<visual_scene> &app_scene) {
       material *platform_color = new material(vec4(1, 0, 0, 1));
       material *plank_color = new material(vec4(0, 0, 1, 1));
       const float PI = 3.14159f;
 
-      // place inital platform
+      // place the platforms
+      // first platform
       mat4t mat;
       mat.loadIdentity();
-      mat.translate(start_location);
-      app_scene->add_shape(mat, new mesh_box(vec3(1, height, 2)), platform_color, false);
-      mesh_instances.push_back(app_scene->get_mesh_instance(0));
-      rigid_bodies.push_back(mesh_instances[0]->get_node()->get_rigid_body());
+      mat.translate(vec3(hinge_platform_x, hinge_platform_y, hinge_platform_z));
+      app_scene->add_shape(mat, new mesh_box(vec3(1, bridge_height, 2)), platform_color, false);
+      mesh_instances.push_back(app_scene->get_mesh_instance(first_hinge_platform));
+      rigid_bodies.push_back(mesh_instances[first_hinge_platform]->get_node()->get_rigid_body());
 
-      // the first plank's origin
-      vec3 plank_location = vec3(start_location[0], start_location[1] + (height - 0.5f), start_location[2]);
-
-      for (int i = 0; i < length_in_planks; ++i) {
-        int index = i + 1;
-        float x = plank_location[0] + 3;
-        plank_location = vec3(x, plank_location[1], plank_location[2]);
-        create_plank(mat, plank_color, true, plank_location);
-        // use an enum for platform and plank indices?
-        // index is i + 1 as the first platform has index 0
-        mesh_instances.push_back(app_scene->get_mesh_instance(index));
-        rigid_bodies.push_back(mesh_instances[index]->get_node()->get_rigid_body());
-
-        btHingeConstraint *hinge;
-
-        if (i == 0) {
-          hinge = new btHingeConstraint(*rigid_bodies[i], *rigid_bodies[index], btVector3(1.5f, height - 0.5f, 0),
-            btVector3(-1.5f, 0, 0), btVector3(0, 0, 1), btVector3(0, 0, 1), false);
-        } else {
-          hinge = new btHingeConstraint(*rigid_bodies[i], *rigid_bodies[index], btVector3(1.5f, 0, 0),
-            btVector3(-1.5f, 0, 0), btVector3(0, 0, 1), btVector3(0, 0, 1), false);
-        }
-
-        btScalar lower_angle_limit = 0;
-        btScalar upper_angle_limit = PI / 6;
-        hinge->setLimit(lower_angle_limit, upper_angle_limit);
-        app_scene->get_dynamics_world()->addConstraint(hinge);
-      }
-
-      // place final platform
+      // last platform
+      float new_x_position = hinge_platform_x + ((plank_num + 1) * 3);
       mat.loadIdentity();
-      mat.translate(vec3(plank_location[0] + 3, start_location[1], plank_location[2]));
-      app_scene->add_shape(mat, new mesh_box(vec3(1, height, 2)), platform_color, false);
-      mesh_instances.push_back(app_scene->get_mesh_instance(length_in_planks + 1));
-      rigid_bodies.push_back(mesh_instances[length_in_planks+1]->get_node()->get_rigid_body());
+      mat.translate(new_x_position, hinge_platform_y, hinge_platform_z);
+      app_scene->add_shape(mat, new mesh_box(vec3(1, bridge_height, 2)), platform_color, false);
+      mesh_instances.push_back(app_scene->get_mesh_instance(last_hinge_platform));
+      rigid_bodies.push_back(mesh_instances[last_hinge_platform]->get_node()->get_rigid_body());
 
-      // add hinge between last plank and platform
-      int last_index = rigid_bodies.size() - 1;
-      btHingeConstraint *hinge = new btHingeConstraint(*rigid_bodies[last_index-1], *rigid_bodies[last_index], btVector3(1.5f, 0, 0),
-        btVector3(-1.5f, height - 0.5f, 0), btVector3(0, 0, 1), btVector3(0, 0, 1), false);
-      btScalar lower_angle_limit = 0;
-      btScalar upper_angle_limit = PI / 6;
-      hinge->setLimit(lower_angle_limit, upper_angle_limit);
+      // place and hinge the first plank to the platform
+      vec3 plank_location = vec3(hinge_platform_x + plank_gap, hinge_platform_y + (bridge_height - 0.5f), hinge_platform_z);
+      create_plank(mat, plank_color, true, plank_location);
+      mesh_instances.push_back(app_scene->get_mesh_instance(first_hinge_plank));
+      rigid_bodies.push_back(mesh_instances[first_hinge_plank]->get_node()->get_rigid_body());
+
+      btHingeConstraint *hinge = new btHingeConstraint(*rigid_bodies[first_hinge_platform], *rigid_bodies[first_hinge_plank],
+                                                        btVector3(1.5f, bridge_height - 0.5f, 0), btVector3(-1.5f, 0, 0),
+                                                        btVector3(0, 0, 1), btVector3(0, 0, 1), false);
       app_scene->get_dynamics_world()->addConstraint(hinge);
+
+      // place and hinge the remaining planks
+      int i = first_hinge_plank + 1;
+      for (i; i <= last_hinge_plank; ++i) {
+        plank_location = vec3(plank_location[0] + plank_gap, plank_location[1], plank_location[2]); 
+        create_plank(mat, plank_color, true, plank_location);
+        mesh_instances.push_back(app_scene->get_mesh_instance(i));
+        rigid_bodies.push_back(mesh_instances[i]->get_node()->get_rigid_body());
+
+        hinge = new btHingeConstraint(*rigid_bodies[i-1], *rigid_bodies[i], btVector3(1.5f, 0, 0), btVector3(-1.5f, 0, 0),
+                                       btVector3(0, 0, 1), btVector3(0, 0, 1), false);
+        app_scene->get_dynamics_world()->addConstraint(hinge);
+
+        // deal with the last plank to platform hinge
+        if (i == last_hinge_plank) {
+          hinge = new btHingeConstraint(*rigid_bodies[i], *rigid_bodies[last_hinge_platform], btVector3(1.5f, 0, 0), 
+                                         btVector3(-1.5f, bridge_height - 0.5f, 0), btVector3(0, 0, 1), btVector3(0, 0, 1), false);
+          app_scene->get_dynamics_world()->addConstraint(hinge);
+        }
+      }
     }
 
     /// Called to draw the world.
@@ -169,7 +179,7 @@ namespace octet {
 
       // used to test spring
       if (is_key_down(key_space))
-        rigid_bodies[4]->applyForce(btVector3(0, 100, 0), btVector3(0, 0, 0));
+        rigid_bodies[first_hinge_plank + (plank_num * 0.5f)]->applyForce(btVector3(0, 100, 0), btVector3(0, 0, 0));
 
       // update matrices, assume 30fps
       app_scene->update(1.0f / 30);
