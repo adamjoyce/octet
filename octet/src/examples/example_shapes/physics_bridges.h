@@ -17,7 +17,11 @@ namespace octet {
 
       hinge_platform_x = -12,
       hinge_platform_y = bridge_height + 1,
-      hinge_platform_z = 0,
+      hinge_platform_z = -2,
+
+      spring_platform_x = -12,
+      spring_platform_y = bridge_height + 1,
+      spring_platform_z = 2,
 
       first_hinge_platform = 0,
       last_hinge_platform = first_hinge_platform + 1,
@@ -33,6 +37,7 @@ namespace octet {
     ~physics_bridges() {
     }
 
+  private:
     /// Called once OpenGL is initialised.
     void app_init() {
       app_scene = new visual_scene();
@@ -41,7 +46,9 @@ namespace octet {
       app_scene->get_camera_instance(0)->get_node()->rotate(-45, vec3(1, 0, 0));
       btDynamicsWorld *dynamics_world = app_scene->get_dynamics_world();
 
-      create_hinge_bridge(app_scene);
+      // build the bridges
+      create_hinge_bridge();
+      create_spring_bridge();
 
       // ground
       material *ground_color = new material(vec4(0, 1, 0, 1));
@@ -109,33 +116,35 @@ namespace octet {
       spring->setEquilibriumPoint();*/
     }
 
-    /// Creates a plank for our bridge.
+    /// Creates a plank for a bridge.
     void create_plank(mat4t mat, material *color, bool is_dynamic, vec3 location) {
       mat.loadIdentity();
       mat.translate(location);
       app_scene->add_shape(mat, new mesh_box(vec3(1, 0.5f, 2)), color, is_dynamic);
     }
 
+    /// Creates a platform for a bridge.
+    void create_platform(mat4t mat, material *color, vec3 location, int height) {
+      mat.loadIdentity();
+      mat.translate(location);
+      app_scene->add_shape(mat, new mesh_box(vec3(1, height, 2)), color, false);
+    }
+
     /// Assemble the hinge bridge.
-    void create_hinge_bridge(ref<visual_scene> &app_scene) {
+    void create_hinge_bridge() {
       material *platform_color = new material(vec4(1, 0, 0, 1));
       material *plank_color = new material(vec4(0, 0, 1, 1));
-      const float PI = 3.14159f;
 
       // place the platforms
       // first platform
       mat4t mat;
-      mat.loadIdentity();
-      mat.translate(vec3(hinge_platform_x, hinge_platform_y, hinge_platform_z));
-      app_scene->add_shape(mat, new mesh_box(vec3(1, bridge_height, 2)), platform_color, false);
+      create_platform(mat, platform_color, vec3(hinge_platform_x, hinge_platform_y, hinge_platform_z), bridge_height);
       mesh_instances.push_back(app_scene->get_mesh_instance(first_hinge_platform));
       rigid_bodies.push_back(mesh_instances[first_hinge_platform]->get_node()->get_rigid_body());
 
       // last platform
       float new_x_position = hinge_platform_x + ((plank_num + 1) * 3);
-      mat.loadIdentity();
-      mat.translate(new_x_position, hinge_platform_y, hinge_platform_z);
-      app_scene->add_shape(mat, new mesh_box(vec3(1, bridge_height, 2)), platform_color, false);
+      create_platform(mat, platform_color, vec3(new_x_position, hinge_platform_y, hinge_platform_z), bridge_height);
       mesh_instances.push_back(app_scene->get_mesh_instance(last_hinge_platform));
       rigid_bodies.push_back(mesh_instances[last_hinge_platform]->get_node()->get_rigid_body());
 
@@ -169,6 +178,12 @@ namespace octet {
           app_scene->get_dynamics_world()->addConstraint(hinge);
         }
       }
+    }
+
+    /// Assemble spring bridge.
+    void create_spring_bridge() {
+      material *platform_color = new material(vec4(1, 0, 0, 1));
+      material *plank_color = new material(vec4(0, 1, 0, 1));
     }
 
     /// Called to draw the world.
