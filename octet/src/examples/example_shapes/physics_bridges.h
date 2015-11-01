@@ -8,6 +8,7 @@ namespace octet {
     ref<visual_scene> app_scene;
     dynarray<mesh_instance*> mesh_instances;
     dynarray<btRigidBody*> rigid_bodies;
+    random rand;
 
     enum {
       bridge_height = 5,
@@ -42,7 +43,7 @@ namespace octet {
       last_spring_platform = first_spring_platform + 1,
 
       first_spring_plank,
-      last_spring_plank = first_spring_plank + plank_num - 1,
+      last_spring_plank = first_spring_plank + (plank_num * 2) - 1,
     };
 
   public:
@@ -217,20 +218,35 @@ namespace octet {
       btTransform frame_in_a, frame_in_b;
       btGeneric6DofSpringConstraint *spring;
       vec3 plank_location = vec3(spring_platform_x, spring_platform_y, spring_platform_z);
-      for (int i = 0; i <= 0/*last_spring_plank - first_spring_plank*/; ++i) {
+      for (int i = 0; i <= last_spring_plank - first_spring_plank; i += 2) {
+        // create the spring platforms
         float new_x_location = plank_location[0] + hinge_plank_gap;
         plank_location = vec3(new_x_location, plank_location[1], plank_location[2]);
         create_plank(mat, plank_color, true, plank_location);
         mesh_instances.push_back(app_scene->get_mesh_instance(first_spring_plank + i));
         rigid_bodies.push_back(mesh_instances[first_spring_plank+i]->get_node()->get_rigid_body());
 
+        // create the spring anchors
+        create_plank(mat, plank_color, false, vec3(plank_location[0], plank_location[1] + 30, plank_location[2]));
+        mesh_instances.push_back(app_scene->get_mesh_instance(first_spring_plank + i + 1));
+        rigid_bodies.push_back(mesh_instances[first_spring_plank+i+1]->get_node()->get_rigid_body());
+
         frame_in_a = btTransform::getIdentity();
-        frame_in_a.setOrigin(btVector3(btScalar(0), btScalar(-10), btScalar(0)));
+        frame_in_a.setOrigin(btVector3(btScalar(0), btScalar(0), btScalar(0)));
         frame_in_b = btTransform::getIdentity();
-        frame_in_b.setOrigin(btVector3(btScalar(new_x_location), btScalar(0.5f), btScalar(spring_platform_z)));
-        spring = new btGeneric6DofSpringConstraint(*rigid_bodies[first_spring_plank+i], *rigid_bodies[ground], frame_in_a, frame_in_b, true);
+        frame_in_b.setOrigin(btVector3(btScalar(0), btScalar(25), btScalar(0)));
+        spring = new btGeneric6DofSpringConstraint(*rigid_bodies[first_spring_plank+i+1], *rigid_bodies[first_spring_plank+i], 
+                                                    frame_in_a, frame_in_b, true);
+
+        spring->setLinearUpperLimit(btVector3(0, 0, 0));
+        spring->setLinearLowerLimit(btVector3(0, -10, 0));
+        spring->setAngularLowerLimit(btVector3(0, 0, 0));
+        spring->setAngularUpperLimit(btVector3(0, 0, 0));
 
         spring->enableSpring(1, true);
+        spring->setStiffness(1, 19);
+        spring->setDamping(1, 0.5f);
+        //spring->setEquilibriumPoint();
         app_scene->get_dynamics_world()->addConstraint(spring);
       }
     }
@@ -242,8 +258,12 @@ namespace octet {
       app_scene->begin_render(vx, vy);
 
       // used to test spring
-      if (is_key_down(key_space))
-        rigid_bodies[first_spring_plank]->applyForce(btVector3(0, 100, 0), btVector3(0, 0, 0));
+      mat4t mat;
+      material *color = new material(vec4(1, 1, 1, 1));
+      float r = rand.get(first_spring_plank, last_spring_plank);
+      if (is_key_down(key_space)) {
+        rigid_bodies[r]->applyForce(btVector3(0, -200, 0), btVector3(0, 0, 0));
+      }
 
       // update matrices, assume 30fps
       app_scene->update(1.0f / 30);
