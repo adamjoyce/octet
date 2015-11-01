@@ -430,6 +430,7 @@
     <ClInclude Include="example_shapes.h" />
     <ClInclude Include="hello_bullet.h" />
     <ClInclude Include="physics_bridges.h" />
+    <ClInclude Include="sound_system.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\resources\mesh_builder.inl">

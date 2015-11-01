@@ -2,11 +2,17 @@
 // Author: Adam Joyce
 // Version: 2.3
 
+#include "sound_system.h"
+
 namespace octet {
   class physics_bridges : public app {
     // scene for drawing objects
     ref<visual_scene> app_scene;
     btDynamicsWorld *dynamics_world;
+
+    //sound_system sound_sys;
+    //FMOD::Sound *ball_sound;
+
     dynarray<mesh_instance*> mesh_instances;
     dynarray<btRigidBody*> rigid_bodies;
     random rand;
@@ -141,7 +147,7 @@ namespace octet {
     }
 
     /// Assemble spring bridge.
-    /// Acknowledgement: http://bullet.googlecode.com/svn/trunk/Demos/ConstraintDemo/ConstraintDemo.cpp
+    /// Reference: http://bullet.googlecode.com/svn/trunk/Demos/ConstraintDemo/ConstraintDemo.cpp
     void create_spring_bridge() {
       material *platform_color = new material(vec4(1, 0, 0, 1));
       material *plank_color = new material(vec4(1, 1, 0, 1));
@@ -195,7 +201,7 @@ namespace octet {
     }
 
     /// Detect collisions.
-    /// Acknowledgement: http://hamelot.co.uk/programming/using-bullet-only-for-collision-detection/
+    /// Reference: http://hamelot.co.uk/programming/using-bullet-only-for-collision-detection/
     void handle_collisions() {
       // perform collision detection
       dynamics_world->performDiscreteCollisionDetection();
@@ -216,9 +222,15 @@ namespace octet {
           btVector3 point_a = point.getPositionWorldOnA();
           btVector3 point_b = point.getPositionWorldOnB();
           double point_dist = point.getDistance();
-          printf("CONTACT");
+          //sound_sys.play_sound(ball_sound, false);
         }
       }
+    }
+
+    /// Set up the ball sound.
+    void sound_setup() {
+      //sound_sys = sound_system();
+      //sound_sys.create_sound(ball_sound, "ball_sound.mp3");
     }
 
     /// Called to draw the world.
