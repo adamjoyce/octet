@@ -2,27 +2,26 @@
 // Author: Adam Joyce
 // Version: 2.3
 
-#include "sound_system.h"
+//#include "sound_system.h"
 
 namespace octet {
   class physics_bridges : public app {
     // scene for drawing objects
     ref<visual_scene> app_scene;
     btDynamicsWorld *dynamics_world;
-
-    //sound_system sound_sys;
-    //FMOD::Sound *ball_sound;
-
     dynarray<mesh_instance*> mesh_instances;
     dynarray<btRigidBody*> rigid_bodies;
     random rand;
+
+    //sound_system sound_sys;
+    //FMOD::Sound *ball_sound;
 
     enum {
       bridge_height = 5,
       plank_num = 7,
       platform_num = 2,
       hinge_plank_gap = 3,
-      spring_plank_gap = 3,
+      spring_plank_gap = 2,
 
       // position of the first hinge platform
       hinge_platform_x = -12,
@@ -38,9 +37,9 @@ namespace octet {
       // x position of the second spring platform
       spring_platform2_x = spring_platform_x + ((plank_num + 1) * spring_plank_gap),
 
-      //ground = 0,
+      ground = 0,
 
-      first_hinge_platform = 0,
+      first_hinge_platform = 1,
       last_hinge_platform = first_hinge_platform + 1,
 
       first_hinge_plank,
@@ -70,31 +69,37 @@ namespace octet {
       dynamics_world = app_scene->get_dynamics_world();
 
       // ground
-      /*material *ground_color = new material(vec4(0, 1, 0, 1));
+      material *ground_color = new material(vec4(0, 1, 0, 1));
       mat4t mat;
       mat.loadIdentity();
       app_scene->add_shape(mat, new mesh_box(vec3(200, 1, 200)), ground_color, false);
-      mesh_instances.push_back(app_scene->get_mesh_instance(ground));
-      rigid_bodies.push_back(mesh_instances[ground]->get_node()->get_rigid_body());*/
-
+      add_to_arrays(ground);
 
       // build the bridges
       create_hinge_bridge();
       create_spring_bridge();
     }
 
+    /// Add a shape's mesh_instance and rigid_body to the corresponding arrays.
+    void add_to_arrays(int index) {
+      mesh_instances.push_back(app_scene->get_mesh_instance(index));
+      rigid_bodies.push_back(mesh_instances[index]->get_node()->get_rigid_body());
+    }
+
     /// Creates a plank for a bridge.
-    void create_plank(mat4t mat, material *color, bool is_dynamic, vec3 location) {
+    void create_plank(mat4t mat, material *color, bool is_dynamic, vec3 location, int array_index) {
       mat.loadIdentity();
       mat.translate(location);
       app_scene->add_shape(mat, new mesh_box(vec3(1, 0.5f, 2)), color, is_dynamic);
+      add_to_arrays(array_index);
     }
 
     /// Creates a platform for a bridge.
-    void create_platform(mat4t mat, material *color, vec3 location, int height) {
+    void create_platform(mat4t mat, material *color, vec3 location, int height, int array_index) {
       mat.loadIdentity();
       mat.translate(location);
       app_scene->add_shape(mat, new mesh_box(vec3(1, height, 2)), color, false);
+      add_to_arrays(array_index);
     }
 
     /// Assemble the hinge bridge.
@@ -102,23 +107,16 @@ namespace octet {
       material *platform_color = new material(vec4(1, 0, 0, 1));
       material *plank_color = new material(vec4(0, 0, 1, 1));
 
-      // place the platforms
-      // first platform
+      // place the first and last platforms
       mat4t mat;
-      create_platform(mat, platform_color, vec3(hinge_platform_x, hinge_platform_y, hinge_platform_z), bridge_height);
-      mesh_instances.push_back(app_scene->get_mesh_instance(first_hinge_platform));
-      rigid_bodies.push_back(mesh_instances[first_hinge_platform]->get_node()->get_rigid_body());
+      create_platform(mat, platform_color, vec3(hinge_platform_x, hinge_platform_y, hinge_platform_z), bridge_height,
+                                                first_hinge_platform);
+      create_platform(mat, platform_color, vec3(hinge_platform2_x, hinge_platform_y, hinge_platform_z), bridge_height,
+                                                last_hinge_platform);
 
-      // last platform
-      create_platform(mat, platform_color, vec3(hinge_platform2_x, hinge_platform_y, hinge_platform_z), bridge_height);
-      mesh_instances.push_back(app_scene->get_mesh_instance(last_hinge_platform));
-      rigid_bodies.push_back(mesh_instances[last_hinge_platform]->get_node()->get_rigid_body());
-
-      // place and hinge the first plank to the platform
+      // place and hinge the first plank to the first platform
       vec3 plank_location = vec3(hinge_platform_x + hinge_plank_gap, hinge_platform_y + (bridge_height - 0.5f), hinge_platform_z);
-      create_plank(mat, plank_color, true, plank_location);
-      mesh_instances.push_back(app_scene->get_mesh_instance(first_hinge_plank));
-      rigid_bodies.push_back(mesh_instances[first_hinge_plank]->get_node()->get_rigid_body());
+      create_plank(mat, plank_color, true, plank_location, first_hinge_plank);
 
       btHingeConstraint *hinge = new btHingeConstraint(*rigid_bodies[first_hinge_platform], *rigid_bodies[first_hinge_plank],
                                                         btVector3(1.5f, bridge_height - 0.5f, 0), btVector3(-1.5f, 0, 0),
@@ -129,9 +127,7 @@ namespace octet {
       int i = first_hinge_plank + 1;
       for (i; i <= last_hinge_plank; i++) {
         plank_location = vec3(plank_location[0] + hinge_plank_gap, plank_location[1], plank_location[2]); 
-        create_plank(mat, plank_color, true, plank_location);
-        mesh_instances.push_back(app_scene->get_mesh_instance(i));
-        rigid_bodies.push_back(mesh_instances[i]->get_node()->get_rigid_body());
+        create_plank(mat, plank_color, true, plank_location, i);
 
         hinge = new btHingeConstraint(*rigid_bodies[i-1], *rigid_bodies[i], btVector3(1.5f, 0, 0), btVector3(-1.5f, 0, 0),
                                        btVector3(0, 0, 1), btVector3(0, 0, 1), false);
@@ -152,33 +148,25 @@ namespace octet {
       material *platform_color = new material(vec4(1, 0, 0, 1));
       material *plank_color = new material(vec4(1, 1, 0, 1));
 
-      // place the platforms
-      // first platform
+      // place the first and last platforms
       mat4t mat;
-      create_platform(mat, platform_color, vec3(spring_platform_x, spring_platform_y, spring_platform_z), bridge_height);
-      mesh_instances.push_back(app_scene->get_mesh_instance(first_spring_platform));
-      rigid_bodies.push_back(app_scene->get_mesh_instance(first_spring_platform)->get_node()->get_rigid_body());
-
-      // last platform
-      create_platform(mat, platform_color, vec3(spring_platform2_x, spring_platform_y, spring_platform_z), bridge_height);
-      mesh_instances.push_back(app_scene->get_mesh_instance(last_spring_platform));
-      rigid_bodies.push_back(app_scene->get_mesh_instance(last_spring_platform)->get_node()->get_rigid_body());
+      create_platform(mat, platform_color, vec3(spring_platform_x, spring_platform_y, spring_platform_z), bridge_height, 
+                                                first_spring_platform);
+      create_platform(mat, platform_color, vec3(spring_platform2_x, spring_platform_y, spring_platform_z), bridge_height, 
+                                                last_spring_platform);
 
       btTransform frame_in_a, frame_in_b;
       btGeneric6DofSpringConstraint *spring;
       vec3 plank_location = vec3(spring_platform_x, spring_platform_y, spring_platform_z);
       for (int i = 0; i <= last_spring_plank - first_spring_plank; i += 2) {
-        // create the spring platforms
-        float new_x_location = plank_location[0] + hinge_plank_gap;
+        // create the spring planks
+        float new_x_location = plank_location[0] + spring_plank_gap;
         plank_location = vec3(new_x_location, plank_location[1], plank_location[2]);
-        create_plank(mat, plank_color, true, plank_location);
-        mesh_instances.push_back(app_scene->get_mesh_instance(first_spring_plank + i));
-        rigid_bodies.push_back(mesh_instances[first_spring_plank+i]->get_node()->get_rigid_body());
+        create_plank(mat, plank_color, true, plank_location, first_spring_plank + i);
 
         // create the spring anchors
-        create_plank(mat, plank_color, false, vec3(plank_location[0], plank_location[1] + 30, plank_location[2]));
-        mesh_instances.push_back(app_scene->get_mesh_instance(first_spring_plank + i + 1));
-        rigid_bodies.push_back(mesh_instances[first_spring_plank+i+1]->get_node()->get_rigid_body());
+        create_plank(mat, plank_color, false, vec3(plank_location[0], plank_location[1] + 30, plank_location[2]),
+                                                   first_spring_plank + i + 1);
 
         frame_in_a = btTransform::getIdentity();
         frame_in_a.setOrigin(btVector3(btScalar(0), btScalar(0), btScalar(0)));
@@ -228,9 +216,16 @@ namespace octet {
     }
 
     /// Set up the ball sound.
-    void sound_setup() {
+    /// Issue with fmod in sound_system class that needs resolving.
+    //void sound_setup() {
       //sound_sys = sound_system();
       //sound_sys.create_sound(ball_sound, "ball_sound.mp3");
+    //}
+
+    /// Spawn ball objects above the bridges.
+    void spawn_ball() {
+      mat4t mat;
+      material *color = new material(vec4(0, 0, 0, 1));
     }
 
     /// Called to draw the world.
