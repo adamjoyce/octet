@@ -248,6 +248,13 @@ class invaderers_app : public octet::app {
         sprites[ship_sprite].translate(-ship_speed, 0);
       }
     }   
+
+    // sort bomb speed
+    if (!is_key_down(key_left) && !is_key_down(key_right) && !is_key_down(key_up) && !is_key_down(key_down)) {
+      bomb_speed = 0.05f;
+    } else {
+      bomb_speed = 0.2f;
+    }
   }
 
   // pick an invaderer and fire a bomb
@@ -279,12 +286,13 @@ class invaderers_app : public octet::app {
     }
   }
 
+  float bomb_speed = 0.01f;
   // animate the bombs
   void move_bombs() {
     //const float bomb_speed = 0.2f;
     for (int i = 0; i != num_bombs; ++i) {
-      float x = random_float(-0.2f, 0.2f);
-      float y = random_float(-0.2f, 0.2f);
+      float x = random_float(-bomb_speed, bomb_speed);
+      float y = random_float(-bomb_speed, bomb_speed);
       sprite &bomb = sprites[first_bomb_sprite + i];
       if (bomb.is_enabled()) {
         bomb.translate(x, y);

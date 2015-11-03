@@ -8,10 +8,23 @@ namespace octet {
   class physics_bridges : public app {
     // scene for drawing objects
     ref<visual_scene> app_scene;
+    // dynamics world
     btDynamicsWorld *dynamics_world;
+
+    // store shape's mesh_instances and rigid_bodies
     dynarray<mesh_instance*> mesh_instances;
     dynarray<btRigidBody*> rigid_bodies;
+
+    // materials
+    material *ground_color;
+    material *platform_color;
+    material *hinge_plank_color;
+    material *spring_plank_color;
+    material *ball_color;
+
     random rand;
+    // rough frame counter for dropping balls
+    int frame;
 
     //sound_system sound_sys;
     //FMOD::Sound *ball_sound;
@@ -21,7 +34,7 @@ namespace octet {
       plank_num = 7,
       platform_num = 2,
       hinge_plank_gap = 3,
-      spring_plank_gap = 2,
+      spring_plank_gap = 3,
 
       // position of the first hinge platform
       hinge_platform_x = -12,
@@ -68,8 +81,15 @@ namespace octet {
       app_scene->get_camera_instance(0)->get_node()->rotate(-45, vec3(1, 0, 0));
       dynamics_world = app_scene->get_dynamics_world();
 
+      ground_color = new material(vec4(0, 1, 0, 1));
+      platform_color = new material(vec4(1, 0, 0, 1));
+      hinge_plank_color = new material(vec4(0, 0, 1, 1));
+      spring_plank_color = new material(vec4(1, 1, 0, 1));
+      ball_color = new material(vec4(0, 0, 0, 1));
+
+      frame = 0;
+
       // ground
-      material *ground_color = new material(vec4(0, 1, 0, 1));
       mat4t mat;
       mat.loadIdentity();
       app_scene->add_shape(mat, new mesh_box(vec3(200, 1, 200)), ground_color, false);
@@ -104,9 +124,6 @@ namespace octet {
 
     /// Assemble the hinge bridge.
     void create_hinge_bridge() {
-      material *platform_color = new material(vec4(1, 0, 0, 1));
-      material *plank_color = new material(vec4(0, 0, 1, 1));
-
       // place the first and last platforms
       mat4t mat;
       create_platform(mat, platform_color, vec3(hinge_platform_x, hinge_platform_y, hinge_platform_z), bridge_height,
@@ -116,7 +133,7 @@ namespace octet {
 
       // place and hinge the first plank to the first platform
       vec3 plank_location = vec3(hinge_platform_x + hinge_plank_gap, hinge_platform_y + (bridge_height - 0.5f), hinge_platform_z);
-      create_plank(mat, plank_color, true, plank_location, first_hinge_plank);
+      create_plank(mat, hinge_plank_color, true, plank_location, first_hinge_plank);
 
       btHingeConstraint *hinge = new btHingeConstraint(*rigid_bodies[first_hinge_platform], *rigid_bodies[first_hinge_plank],
                                                         btVector3(1.5f, bridge_height - 0.5f, 0), btVector3(-1.5f, 0, 0),
@@ -127,7 +144,7 @@ namespace octet {
       int i = first_hinge_plank + 1;
       for (i; i <= last_hinge_plank; i++) {
         plank_location = vec3(plank_location[0] + hinge_plank_gap, plank_location[1], plank_location[2]); 
-        create_plank(mat, plank_color, true, plank_location, i);
+        create_plank(mat, hinge_plank_color, true, plank_location, i);
 
         hinge = new btHingeConstraint(*rigid_bodies[i-1], *rigid_bodies[i], btVector3(1.5f, 0, 0), btVector3(-1.5f, 0, 0),
                                        btVector3(0, 0, 1), btVector3(0, 0, 1), false);
@@ -145,9 +162,6 @@ namespace octet {
     /// Assemble spring bridge.
     /// Reference: http://bullet.googlecode.com/svn/trunk/Demos/ConstraintDemo/ConstraintDemo.cpp
     void create_spring_bridge() {
-      material *platform_color = new material(vec4(1, 0, 0, 1));
-      material *plank_color = new material(vec4(1, 1, 0, 1));
-
       // place the first and last platforms
       mat4t mat;
       create_platform(mat, platform_color, vec3(spring_platform_x, spring_platform_y, spring_platform_z), bridge_height, 
@@ -162,10 +176,10 @@ namespace octet {
         // create the spring planks
         float new_x_location = plank_location[0] + spring_plank_gap;
         plank_location = vec3(new_x_location, plank_location[1], plank_location[2]);
-        create_plank(mat, plank_color, true, plank_location, first_spring_plank + i);
+        create_plank(mat, spring_plank_color, true, plank_location, first_spring_plank + i);
 
         // create the spring anchors
-        create_plank(mat, plank_color, false, vec3(plank_location[0], plank_location[1] + 30, plank_location[2]),
+        create_plank(mat, spring_plank_color, false, vec3(plank_location[0], plank_location[1] + 30, plank_location[2]),
                                                    first_spring_plank + i + 1);
 
         frame_in_a = btTransform::getIdentity();
@@ -217,15 +231,50 @@ namespace octet {
 
     /// Set up the ball sound.
     /// Issue with fmod in sound_system class that needs resolving.
-    //void sound_setup() {
-      //sound_sys = sound_system();
-      //sound_sys.create_sound(ball_sound, "ball_sound.mp3");
-    //}
+    /*void sound_setup() {
+      sound_sys = sound_system();
+      sound_sys.create_sound(ball_sound, "ball_sound.mp3");
+    }*/
+
+    /// Create a ball.
+    void create_ball(mat4t mat, vec3 location, material *color) {
+      mat.loadIdentity();
+      mat.translate(location);
+      app_scene->add_shape(mat, new mesh_sphere(), ball_color, true);
+      add_to_arrays(mesh_instances.size());
+    }
 
     /// Spawn ball objects above the bridges.
-    void spawn_ball() {
+    void spawn_balls() {
       mat4t mat;
-      material *color = new material(vec4(0, 0, 0, 1));
+
+      float r_hinge;
+      int spawn_height = bridge_height + 20;
+
+      // may screw things up if second platform has a negative x coordinate
+      int hinge_min = hinge_platform_x + hinge_plank_gap;
+      int hinge_max = hinge_platform2_x - hinge_plank_gap;
+
+      if (frame == 0) {
+        for (int i = 0; i < 3; i++) {
+          // generate randomish positions above each bridge
+          r_hinge = rand.get(hinge_min, hinge_max);
+          // drop the balls
+          create_ball(mat, vec3(r_hinge, rand.get(20, 30), hinge_platform_z), ball_color);
+        }
+      } else if (frame % 125 == 0) {
+        int index = mesh_instances.size() - 1;
+        for (int i = 0; i < 3; i++) {
+          // generate randomish positions above each bridge
+          r_hinge = rand.get(hinge_min, hinge_max);
+
+          mesh_instance *ball = mesh_instances[index-i];
+          ball->get_node()->set_linear_velocity(vec3(0, 0, 0));
+          ball->get_node()->set_position(vec3(r_hinge, rand.get(20, 30), hinge_platform_z));
+        }
+      }
+
+      frame++;
     }
 
     /// Called to draw the world.
@@ -234,22 +283,13 @@ namespace octet {
       get_viewport_size(vx, vy);
       app_scene->begin_render(vx, vy);
 
-      // used to test spring
-      mat4t mat;
-      material *color = new material(vec4(0, 0, 0, 1));
-      float r = rand.get(first_spring_plank, last_spring_plank);
-      if (is_key_down(key_space)) {
-        mat.loadIdentity();
-        mat.translate(vec3(-6, 30, hinge_platform_z));
-        app_scene->add_shape(mat, new mesh_sphere(), color, true);
-        //rigid_bodies[r]->applyForce(btVector3(0, -200, 0), btVector3(0, 0, 0));
-      }
-
       // update matrices, assume 30fps
       app_scene->update(1.0f / 30);
 
       // draw the scene
       app_scene->render((float)vx / vy);
+
+      spawn_balls();
 
       handle_collisions();
     }

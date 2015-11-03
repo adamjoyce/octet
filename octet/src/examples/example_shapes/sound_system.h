@@ -6,13 +6,13 @@
 // Reference: https://cuboidzone.wordpress.com/2013/07/26/tutorial-implementing-fmod/
 // Some comments may be unnecessarily explicit for the author's own educational purposes.
 
-//#include "fmod.hpp"
-//#include "fmod_errors.h"
+#include "fmod.hpp"
+#include "fmod_errors.h"
 
 namespace octet {
   class sound_system {
     // pointer to the FMOD instance
-    /*FMOD::System *system;
+    FMOD::System *system;
 
   public:
     sound_system() {
@@ -59,6 +59,6 @@ namespace octet {
     /// Release the sound.
     void release_sound(FMOD::Sound *sound) {
       sound->release();
-    }*/
+    }
   };
 }

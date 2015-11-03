@@ -7,6 +7,7 @@
 // Invaderers - will space be free of 'em?
 //
 
+#define OCTET_BULLET 1
 #include "../../octet.h"
 
 #include "invaderers_app.h"
