@@ -98,6 +98,43 @@ class sprite {
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
   }
 
+  void render(color_shader &shader, mat4t &cameraToWorld, vec4 color) {
+    // build a projection matrix: model -> world -> camera -> projection
+    // the projection space is the cube -1 <= x/w, y/w, z/w <= 1
+    mat4t modelToProjection = mat4t::build_projection_matrix(modelToWorld, cameraToWorld);
+
+    shader.render(modelToProjection, color);
+
+    // this is an array of the positions of the corners of the sprite in 3D
+    // a straight "float" here means this array is being generated here at runtime.
+    float vertices[] = {
+      -halfWidth, -halfHeight, 0,
+      halfWidth, -halfHeight, 0,
+      halfWidth,  halfHeight, 0,
+      -halfWidth,  halfHeight, 0,
+    };
+
+    glVertexAttribPointer(attribute_pos, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)vertices);
+    glEnableVertexAttribArray(attribute_pos);
+
+    // this is an array of the positions of the corners of the texture in 2D
+    static const float uvs[] = {
+      0,  0,
+      1,  0,
+      1,  1,
+      0,  1,
+    };
+
+    // attribute_uv is position in the texture of each corner
+    // each corner (vertex) has 2 floats (x, y)
+    // there is no gap between the 2 floats and hence the stride is 2*sizeof(float)
+    glVertexAttribPointer(attribute_uv, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)uvs);
+    glEnableVertexAttribArray(attribute_uv);
+
+    // finally, draw the sprite (4 vertices)
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+  }
+
   // move the object
   void translate(float x, float y) {
     modelToWorld.translate(x, y, 0);
@@ -140,6 +177,7 @@ class invaderers_app : public octet::app {
 
   // shader to draw a textured triangle
   texture_shader texture_shader_;
+  color_shader color_shader_;
 
   enum {
     num_sound_sources = 8,
@@ -379,6 +417,7 @@ class invaderers_app : public octet::app {
   void app_init() {
     // set up the shader
     texture_shader_.init();
+    color_shader_.init();
 
     // set up the matrices with a camera 5 units from the origin
     cameraToWorld.loadIdentity();
@@ -466,7 +505,25 @@ class invaderers_app : public octet::app {
 
     // draw all the sprites
     for (int i = 0; i != num_sprites; ++i) {
+      if (i == ship_sprite || (i >= first_bomb_sprite && i <= last_bomb_sprite)) {
+        continue;
+      }
+
       sprites[i].render(texture_shader_, cameraToWorld);
+    }
+
+    // todo: tidy this mess up
+    sprites[ship_sprite].render(color_shader_, cameraToWorld, vec4(0, 1, 0, 1));
+
+    vec4 bomb_color;
+    if (bomb_speed == 0.2f) {
+      bomb_color = vec4(1, 0, 0, 1);
+    } else {
+      bomb_color = vec4(0, 0.6f, 0.9f, 1);
+    }
+
+    for (int i = 0; i < last_bomb_sprite - first_bomb_sprite; i++) {
+      sprites[first_bomb_sprite+i].render(color_shader_, cameraToWorld, bomb_color);
     }
 
     char score_text[32];
