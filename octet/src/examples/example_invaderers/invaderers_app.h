@@ -17,9 +17,6 @@
 //   Audio
 //
 
-#include <ctime>
-#include <cstdlib>
-
 namespace octet {
 class sprite {
   // where is our sprite (overkill for a 2D game!)
@@ -47,7 +44,7 @@ class sprite {
     texture = _texture;
     enabled = true;
   }
-   
+
   void render(texture_shader &shader, mat4t &cameraToWorld) {
     // invisible sprite... used for gameplay.
     if (!texture) return;
@@ -135,17 +132,47 @@ class sprite {
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
   }
 
+  void render(space_shader &shader, mat4t &cameraToWorld) {
+    // build a projection matrix: model -> world -> camera -> projection
+    // the projection space is the cube -1 <= x/w, y/w, z/w <= 1
+    mat4t modelToProjection = mat4t::build_projection_matrix(modelToWorld, cameraToWorld);
+
+    shader.render(modelToProjection);
+
+    // this is an array of the positions of the corners of the sprite in 3D
+    // a straight "float" here means this array is being generated here at runtime.
+    float vertices[] = {
+      -halfWidth, -halfHeight, 0,
+      halfWidth, -halfHeight, 0,
+      halfWidth,  halfHeight, 0,
+      -halfWidth,  halfHeight, 0,
+    };
+
+    glVertexAttribPointer(attribute_pos, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)vertices);
+    glEnableVertexAttribArray(attribute_pos);
+
+    // this is an array of the positions of the corners of the texture in 2D
+    static const float uvs[] = {
+      0,  0,
+      1,  0,
+      1,  1,
+      0,  1,
+    };
+
+    // attribute_uv is position in the texture of each corner
+    // each corner (vertex) has 2 floats (x, y)
+    // there is no gap between the 2 floats and hence the stride is 2*sizeof(float)
+    glVertexAttribPointer(attribute_uv, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)uvs);
+    glEnableVertexAttribArray(attribute_uv);
+
+    // finally, draw the sprite (4 vertices)
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+  }
+
   // move the object
   void translate(float x, float y) {
     modelToWorld.translate(x, y, 0);
   }
-
-  // scale the object
-  /*void scale(float x, float y) {
-    modelToWorld.scale(x, y, 0);
-    halfWidth *= x;
-    halfHeight *= y;
-  }*/
 
   // position the object relative to another.
   void set_relative(sprite &rhs, float x, float y) {
@@ -178,6 +205,7 @@ class invaderers_app : public octet::app {
   // shader to draw a textured triangle
   texture_shader texture_shader_;
   color_shader color_shader_;
+  space_shader space_shader_;
 
   enum {
     num_sound_sources = 8,
@@ -186,7 +214,8 @@ class invaderers_app : public octet::app {
     num_bombs = 20,
 
     // sprite definitions
-    ship_sprite = 0,
+    background_sprite = 0,
+    ship_sprite,
     game_over_sprite,
 
     first_invaderer_sprite,
@@ -203,6 +232,7 @@ class invaderers_app : public octet::app {
 
   // timer for bombs
   int bombs_disabled;
+  float bomb_speed;
 
   // accounting for bad guys
   int live_invaderers;
@@ -287,7 +317,7 @@ class invaderers_app : public octet::app {
       }
     }   
 
-    // sort bomb speed
+    // set bomb speed based on player movement
     if (!is_key_down(key_left) && !is_key_down(key_right) && !is_key_down(key_up) && !is_key_down(key_down)) {
       bomb_speed = 0.05f;
     } else {
@@ -324,10 +354,8 @@ class invaderers_app : public octet::app {
     }
   }
 
-  float bomb_speed = 0.01f;
   // animate the bombs
   void move_bombs() {
-    //const float bomb_speed = 0.2f;
     for (int i = 0; i != num_bombs; ++i) {
       float x = random_float(-bomb_speed, bomb_speed);
       float y = random_float(-bomb_speed, bomb_speed);
@@ -412,12 +440,13 @@ class invaderers_app : public octet::app {
   // this is called when we construct the class
   invaderers_app(int argc, char **argv) : app(argc, argv), font(512, 256, "assets/big.fnt") {
   }
-
+ 
   // this is called once OpenGL is initialized
   void app_init() {
     // set up the shader
     texture_shader_.init();
     color_shader_.init();
+    space_shader_.init();
 
     // set up the matrices with a camera 5 units from the origin
     cameraToWorld.loadIdentity();
@@ -425,7 +454,10 @@ class invaderers_app : public octet::app {
 
     font_texture = resource_dict::get_texture_handle(GL_RGBA, "assets/big_0.gif");
 
-    GLuint ship = resource_dict::get_texture_handle(GL_RGB, "#7cfc00");
+    // set the background with a blank texture
+    sprites[background_sprite].init(NULL, 0, 0, 6, 6);
+
+    GLuint ship = resource_dict::get_texture_handle(GL_RGB, "#ffffff");
     sprites[ship_sprite].init(ship, 0, -2.75f, 0.25f, 0.25f);
 
     GLuint GameOver = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/GameOver.gif");
@@ -464,6 +496,7 @@ class invaderers_app : public octet::app {
 
     // sundry counters and game state.
     bombs_disabled = 50;
+    bomb_speed = 0.01f;
     live_invaderers = num_invaderers;
     num_lives = 3;
     game_over = false;
@@ -502,6 +535,8 @@ class invaderers_app : public octet::app {
     // allow alpha blend (transparency when alpha channel is 0)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    sprites[background_sprite].render(space_shader_, cameraToWorld);
 
     // draw all the sprites
     for (int i = 0; i != num_sprites; ++i) {

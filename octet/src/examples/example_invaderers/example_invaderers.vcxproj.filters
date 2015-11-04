@@ -428,7 +428,7 @@
       <Filter>containers</Filter>
     </ClInclude>
     <ClInclude Include="example_invaderers.h" />
-    <ClInclude Include="background_shader.h">
+    <ClInclude Include="space_shader.h">
       <Filter>shaders</Filter>
     </ClInclude>
   </ItemGroup>
