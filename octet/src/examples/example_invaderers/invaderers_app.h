@@ -17,6 +17,11 @@
 //   Audio
 //
 
+// for std::ifstream
+#include <fstream>
+// for std::getline()
+#include <string>
+
 namespace octet {
 class sprite {
   // where is our sprite (overkill for a 2D game!)
@@ -95,43 +100,6 @@ class sprite {
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
   }
 
-  void render(color_shader &shader, mat4t &cameraToWorld, vec4 color) {
-    // build a projection matrix: model -> world -> camera -> projection
-    // the projection space is the cube -1 <= x/w, y/w, z/w <= 1
-    mat4t modelToProjection = mat4t::build_projection_matrix(modelToWorld, cameraToWorld);
-
-    shader.render(modelToProjection, color);
-
-    // this is an array of the positions of the corners of the sprite in 3D
-    // a straight "float" here means this array is being generated here at runtime.
-    float vertices[] = {
-      -halfWidth, -halfHeight, 0,
-      halfWidth, -halfHeight, 0,
-      halfWidth,  halfHeight, 0,
-      -halfWidth,  halfHeight, 0,
-    };
-
-    glVertexAttribPointer(attribute_pos, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)vertices);
-    glEnableVertexAttribArray(attribute_pos);
-
-    // this is an array of the positions of the corners of the texture in 2D
-    static const float uvs[] = {
-      0,  0,
-      1,  0,
-      1,  1,
-      0,  1,
-    };
-
-    // attribute_uv is position in the texture of each corner
-    // each corner (vertex) has 2 floats (x, y)
-    // there is no gap between the 2 floats and hence the stride is 2*sizeof(float)
-    glVertexAttribPointer(attribute_uv, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)uvs);
-    glEnableVertexAttribArray(attribute_uv);
-
-    // finally, draw the sprite (4 vertices)
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-  }
-
   void render(space_shader &shader, mat4t &cameraToWorld) {
     // build a projection matrix: model -> world -> camera -> projection
     // the projection space is the cube -1 <= x/w, y/w, z/w <= 1
@@ -204,14 +172,13 @@ class invaderers_app : public octet::app {
 
   // shader to draw a textured triangle
   texture_shader texture_shader_;
-  color_shader color_shader_;
   space_shader space_shader_;
 
   enum {
     num_sound_sources = 8,
     num_borders = 4,
     num_invaderers = 5,
-    num_bombs = 20,
+    num_bombs = num_invaderers * 2,
 
     // sprite definitions
     background_sprite = 0,
@@ -445,11 +412,82 @@ class invaderers_app : public octet::app {
   invaderers_app(int argc, char **argv) : app(argc, argv), font(512, 256, "assets/big.fnt") {
   }
  
+  /// Load position data from csv file.
+  dynarray<vec2> load_csv_data() {
+    std::ifstream file("sprite_locations.csv");
+    
+    if (!file) {
+      std::string err = "Error loading csv file";
+      printf(err.c_str());
+    }
+
+    float x, y;
+    dynarray<vec2> sprite_locations;
+    std::string value = "";
+
+    while (file.good()) {
+      std::getline(file, value, ',');
+
+      if (isdigit(value[0]) || value[0] == '-') {
+        // x coordinate
+        x = (float)atof(value.c_str());
+        printf(value.c_str());
+
+        // y coordinate
+        std::getline(file, value, ',');
+        y = (float)atof(value.c_str());
+        printf(value.c_str());
+
+        printf("\n");
+
+        sprite_locations.push_back(vec2(x, y));
+      }
+    }
+
+    return sprite_locations;
+  }
+
+  /// Setup sprites.
+  void sprite_setup() {
+    dynarray<vec2> locations = load_csv_data();
+
+    // set the background with a blank texture
+    sprites[background_sprite].init(NULL, locations[background_sprite][0], locations[background_sprite][1], 6, 6);
+
+    GLuint ship = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/ship.gif");
+    sprites[ship_sprite].init(ship, locations[ship_sprite][0], locations[ship_sprite][1], 0.25f, 0.25f);
+
+    GLuint GameOver = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/GameOver.gif");
+    sprites[game_over_sprite].init(GameOver, locations[game_over_sprite][0], locations[game_over_sprite][1], 3, 1.5f);
+
+    GLuint invaderer = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/invaderer.gif");
+    for (int i = 0; i != num_invaderers; ++i) {
+      assert(first_invaderer_sprite + i <= last_invaderer_sprite);
+      sprites[first_invaderer_sprite+i].init(invaderer, locations[first_invaderer_sprite+i][0], locations[first_invaderer_sprite+i][1],
+                                             0.25f, 0.25f);
+    }
+
+    // use the bomb texture
+    GLuint bomb = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/bomb.gif");
+    for (int i = 0; i != num_bombs; ++i) {
+      // create bombs off-screen
+      sprites[first_bomb_sprite+i].init(bomb, locations[first_bomb_sprite][0], locations[first_bomb_sprite][1], 0.0625f, 0.25f);
+      sprites[first_bomb_sprite+i].is_enabled() = false;
+    }
+
+    int first_border_location = first_bomb_sprite + 1;
+    // set the border to white for clarity
+    GLuint white = resource_dict::get_texture_handle(GL_RGB, "#ffffff");
+    sprites[first_border_sprite + 0].init(white, locations[first_border_location+0][0], locations[first_border_location+0][1], 6, 0.2f);
+    sprites[first_border_sprite + 1].init(white, locations[first_border_location+1][0], locations[first_border_location+1][1], 6, 0.2f);
+    sprites[first_border_sprite + 2].init(white, locations[first_border_location+2][0], locations[first_border_location+2][1], 0.2f, 6);
+    sprites[first_border_sprite + 3].init(white, locations[first_border_location+3][0], locations[first_border_location+3][1], 0.2f, 6);
+  }
+
   // this is called once OpenGL is initialized
   void app_init() {
     // set up the shader
     texture_shader_.init();
-    color_shader_.init();
     space_shader_.init();
 
     // set up the matrices with a camera 5 units from the origin
@@ -458,39 +496,7 @@ class invaderers_app : public octet::app {
 
     font_texture = resource_dict::get_texture_handle(GL_RGBA, "assets/big_0.gif");
 
-    // set the background with a blank texture
-    sprites[background_sprite].init(NULL, 0, 0, 6, 6);
-
-    GLuint ship = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/ship.gif");
-    sprites[ship_sprite].init(ship, 0, -2.75f, 0.25f, 0.25f);
-
-    GLuint GameOver = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/GameOver.gif");
-    sprites[game_over_sprite].init(GameOver, 20, 0, 3, 1.5f);
-
-    srand(time(NULL));
-    GLuint invaderer = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/invaderer.gif");
-    // todo: make this not an awful mess
-    for (int i = 0; i != num_invaderers; ++i) {
-      float x = random_float(-2.75f, 2.75f);
-      float y = random_float(-2.75f, 2.75f);
-      assert(first_invaderer_sprite + i <= last_invaderer_sprite);
-      sprites[first_invaderer_sprite+i].init(invaderer, x, y, 0.25f, 0.25f);
-    }
-
-    // set the border to white for clarity
-    GLuint white = resource_dict::get_texture_handle(GL_RGB, "#ffffff");
-    sprites[first_border_sprite+0].init(white, 0, -3, 6, 0.2f);
-    sprites[first_border_sprite+1].init(white, 0,  3, 6, 0.2f);
-    sprites[first_border_sprite+2].init(white, -3, 0, 0.2f, 6);
-    sprites[first_border_sprite+3].init(white, 3,  0, 0.2f, 6);
-
-    // use the bomb texture
-    GLuint bomb = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/bomb.gif");
-    for (int i = 0; i != num_bombs; ++i) {
-      // create bombs off-screen
-      sprites[first_bomb_sprite + i].init(bomb, 20, 0, 0.0625f, 0.25f);
-      sprites[first_bomb_sprite + i].is_enabled() = false;
-    }
+    sprite_setup();
 
     // sounds
     whoosh = resource_dict::get_sound_handle(AL_FORMAT_MONO16, "assets/invaderers/whoosh.wav");

@@ -27,9 +27,9 @@ namespace octet {
         const char fragment_shader[] = SHADER_STR(
           // maths reference: https://www.shadertoy.com/view/4lSSRw
           void main() { 
-            /*vec2 coord = gl_FragCoord.xy;
+            vec2 coord = gl_FragCoord.xy;
             vec3 maths = vec3(max((fract(dot(sin(coord), coord)) - 0.99f)*90, 0));
-            gl_FragColor = vec4(maths, 1);*/
+            gl_FragColor = vec4(maths, 1);
           }
         );
 
