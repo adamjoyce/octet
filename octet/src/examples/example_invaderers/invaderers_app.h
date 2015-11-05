@@ -45,7 +45,7 @@ class sprite {
     enabled = true;
   }
 
-  void render(texture_shader &shader, mat4t &cameraToWorld) {
+  void render(texture_shader &shader, mat4t &cameraToWorld, vec4 color = vec4(1, 1, 1, 1)) {
     // invisible sprite... used for gameplay.
     if (!texture) return;
 
@@ -60,7 +60,7 @@ class sprite {
     // use "old skool" rendering
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    shader.render(modelToProjection, 0);
+    shader.render(modelToProjection, 0, color);
 
     // this is an array of the positions of the corners of the sprite in 3D
     // a straight "float" here means this array is being generated here at runtime.
@@ -318,7 +318,11 @@ class invaderers_app : public octet::app {
     }   
 
     // set bomb speed based on player movement
-    if (!is_key_down(key_left) && !is_key_down(key_right) && !is_key_down(key_up) && !is_key_down(key_down)) {
+    if ((!is_key_down(key_left) && !is_key_down(key_right) && !is_key_down(key_up) && !is_key_down(key_down)) ||
+        (sprites[ship_sprite].collides_with(sprites[first_border_sprite]) ||
+        sprites[ship_sprite].collides_with(sprites[first_border_sprite+1]) || 
+        sprites[ship_sprite].collides_with(sprites[first_border_sprite+2]) || 
+        sprites[ship_sprite].collides_with(sprites[first_border_sprite+3]))) {
       bomb_speed = 0.05f;
     } else {
       bomb_speed = 0.2f;
@@ -402,7 +406,7 @@ class invaderers_app : public octet::app {
     return r + min;
   }
 
-  void draw_text(texture_shader &shader, float x, float y, float scale, const char *text) {
+  void draw_text(texture_shader &shader, float x, float y, float scale, const char *text, vec4 color = vec4(1, 1, 1, 1)) {
     mat4t modelToWorld;
     modelToWorld.loadIdentity();
     modelToWorld.translate(x, y, 0);
@@ -425,7 +429,7 @@ class invaderers_app : public octet::app {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, font_texture);
 
-    shader.render(modelToProjection, 0);
+    shader.render(modelToProjection, 0, color);
 
     glVertexAttribPointer(attribute_pos, 3, GL_FLOAT, GL_FALSE, sizeof(bitmap_font::vertex), (void*)&vertices[0].x );
     glEnableVertexAttribArray(attribute_pos);
@@ -457,14 +461,14 @@ class invaderers_app : public octet::app {
     // set the background with a blank texture
     sprites[background_sprite].init(NULL, 0, 0, 6, 6);
 
-    GLuint ship = resource_dict::get_texture_handle(GL_RGB, "#ffffff");
+    GLuint ship = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/ship.gif");
     sprites[ship_sprite].init(ship, 0, -2.75f, 0.25f, 0.25f);
 
     GLuint GameOver = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/GameOver.gif");
     sprites[game_over_sprite].init(GameOver, 20, 0, 3, 1.5f);
 
     srand(time(NULL));
-    GLuint invaderer = resource_dict::get_texture_handle(GL_RGB, "#ff0000");
+    GLuint invaderer = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/invaderer.gif");
     // todo: make this not an awful mess
     for (int i = 0; i != num_invaderers; ++i) {
       float x = random_float(-2.75f, 2.75f);
@@ -495,7 +499,7 @@ class invaderers_app : public octet::app {
     alGenSources(num_sound_sources, sources);
 
     // sundry counters and game state.
-    bombs_disabled = 50;
+    bombs_disabled = 10;
     bomb_speed = 0.01f;
     live_invaderers = num_invaderers;
     num_lives = 3;
@@ -506,6 +510,9 @@ class invaderers_app : public octet::app {
   // called every frame to move things
   void simulate() {
     if (game_over) {
+      if (is_key_down(key_space)) {
+        app_init();
+      }
       return;
     }
 
@@ -516,6 +523,39 @@ class invaderers_app : public octet::app {
     move_bombs();
     
     collide_invaderer();
+  }
+
+  /// Draw spites.
+  void draw_sprites() {
+    sprites[background_sprite].render(space_shader_, cameraToWorld);
+
+    sprites[ship_sprite].render(texture_shader_, cameraToWorld, vec4(1, 1, 0, 1));
+
+    sprites[game_over_sprite].render(texture_shader_, cameraToWorld);
+
+    // invaderers
+    for (int i = first_invaderer_sprite; i <= last_invaderer_sprite; i++) {
+      sprites[i].render(texture_shader_, cameraToWorld, vec4(0.05f, 0.45f, 0.03f, 1));
+    }
+
+    // bombs
+    vec4 bomb_color;
+    if (bomb_speed == 0.2f) {
+      bomb_color = vec4(1, 0, 0, 1);
+    }
+    else {
+      bomb_color = vec4(1, 0.68f, 0.68f, 1);
+    }
+
+    for (int i = first_bomb_sprite; i <= last_bomb_sprite; i++) {
+      sprites[i].render(texture_shader_, cameraToWorld, bomb_color);
+    }
+
+    // borders
+    for (int i = first_border_sprite; i <= last_border_sprite; i++) {
+      sprites[i].render(texture_shader_, cameraToWorld);
+    }
+
   }
 
   // this is called to draw the world
@@ -536,30 +576,7 @@ class invaderers_app : public octet::app {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    sprites[background_sprite].render(space_shader_, cameraToWorld);
-
-    // draw all the sprites
-    for (int i = 0; i != num_sprites; ++i) {
-      if (i == ship_sprite || (i >= first_bomb_sprite && i <= last_bomb_sprite)) {
-        continue;
-      }
-
-      sprites[i].render(texture_shader_, cameraToWorld);
-    }
-
-    // todo: tidy this mess up
-    sprites[ship_sprite].render(color_shader_, cameraToWorld, vec4(0, 1, 0, 1));
-
-    vec4 bomb_color;
-    if (bomb_speed == 0.2f) {
-      bomb_color = vec4(1, 0, 0, 1);
-    } else {
-      bomb_color = vec4(0, 0.6f, 0.9f, 1);
-    }
-
-    for (int i = 0; i < last_bomb_sprite - first_bomb_sprite; i++) {
-      sprites[first_bomb_sprite+i].render(color_shader_, cameraToWorld, bomb_color);
-    }
+    draw_sprites();
 
     char score_text[32];
     sprintf(score_text, "score: %d   lives: %d\n", score, num_lives);
