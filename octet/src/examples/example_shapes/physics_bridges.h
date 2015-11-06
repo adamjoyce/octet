@@ -2,6 +2,7 @@
 // Author: Adam Joyce
 // Version: 2.3
 
+#include "../../resources/csv_parser.h"
 //#include "sound_system.h"
 
 namespace octet {
@@ -14,6 +15,9 @@ namespace octet {
     // store shape's mesh_instances and rigid_bodies
     dynarray<mesh_instance*> mesh_instances;
     dynarray<btRigidBody*> rigid_bodies;
+
+    // the locations of the first hinge and spring platforms
+    dynarray<vec3> platform_locations;
 
     // materials
     material *ground_color;
@@ -94,6 +98,9 @@ namespace octet {
       mat.loadIdentity();
       app_scene->add_shape(mat, new mesh_box(vec3(200, 1, 200)), ground_color, false);
       add_to_arrays(ground);
+
+      // load platform locations from csv
+      load_csv_data();
 
       // build the bridges
       create_hinge_bridge();
@@ -275,6 +282,12 @@ namespace octet {
       }
 
       frame++;
+    }
+
+    /// Loads platform location data from a csv file.
+    void load_csv_data() {
+      csv_parser parser;
+      platform_locations = parser.vec3_locations_file("platform_locations");
     }
 
     /// Called to draw the world.

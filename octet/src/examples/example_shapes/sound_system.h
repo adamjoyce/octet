@@ -1,10 +1,11 @@
 // FMOD Sound System
+// Some comments may be unnecessarily explicit for the author's own educational purposes.
+//
 // Author: Adam Joyce
 // Version: 1.03 - Issue with 'bod' identifier in fmod.hpp and fmod.h - unsure of the exact issue
 //
 // API: http://www.fmod.org/documentation/#content/generated/lowlevel_api.html
 // Reference: https://cuboidzone.wordpress.com/2013/07/26/tutorial-implementing-fmod/
-// Some comments may be unnecessarily explicit for the author's own educational purposes.
 
 #include "fmod.hpp"
 #include "fmod_errors.h"

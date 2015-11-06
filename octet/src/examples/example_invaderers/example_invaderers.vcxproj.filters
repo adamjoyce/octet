@@ -431,6 +431,7 @@
     <ClInclude Include="space_shader.h">
       <Filter>shaders</Filter>
     </ClInclude>
+    <ClInclude Include="csv_parser.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\resources\mesh_builder.inl">

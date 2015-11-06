@@ -17,12 +17,7 @@
 //   Audio
 //
 
-// for std::ifstream
-#include <fstream>
-// for std::getline()
-#include <string>
-// for std::stringstream
-#include <sstream>
+#include "..\..\resources\csv_parser.h"
 
 namespace octet {
 class sprite {
@@ -413,65 +408,12 @@ class invaderers_app : public octet::app {
   // this is called when we construct the class
   invaderers_app(int argc, char **argv) : app(argc, argv), font(512, 256, "assets/big.fnt") {
   }
- 
-  /// Load position data from csv file.
-  dynarray<vec4> load_csv_data() {
-    std::ifstream file_stream("sprite_locations.csv");
-    
-    if (!file_stream) {
-      std::string err = "Error loading csv file";
-      printf(err.c_str());
-    }
-
-    dynarray<vec4> sprite_locations;
-    std::string line = "";
-
-    while (file_stream.good()) {
-      std::getline(file_stream, line, '\n');
-
-      // delimit each row with a comma
-      line = line + ',';
-      std::stringstream line_stream(line);
-
-      float x, y, w, h;
-      std::string value = "";
-
-      while (line_stream.good()) {
-        std::getline(line_stream, value, ',');
-
-        if (isdigit(value[0]) || value[0] == '-') {
-          // x coordinate
-          x = (float)atof(value.c_str());
-          printf(value.c_str());
-
-          // y coordinate
-          std::getline(line_stream, value, ',');
-          y = (float)atof(value.c_str());
-          printf(value.c_str());
-
-          // width
-          std::getline(line_stream, value, ',');
-          w = (float)atof(value.c_str());
-          printf(value.c_str());
-
-          // height
-          std::getline(line_stream, value, ',');
-          h = (float)atof(value.c_str());
-          printf(value.c_str());
-
-          printf("\n");
-
-          sprite_locations.push_back(vec4(x, y, w, h));
-        }
-      }
-    }
-
-    return sprite_locations;
-  }
 
   /// Setup sprites.
   void sprite_setup() {
-    dynarray<vec4> sprite_data = load_csv_data();
+    // load the sprite data into an array
+    csv_parser parser;
+    dynarray<vec4> sprite_data = parser.vec4_locations_file("sprite_locations.csv");
 
     // background
     // set the background with a blank texture
