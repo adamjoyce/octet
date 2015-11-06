@@ -413,7 +413,8 @@ class invaderers_app : public octet::app {
   void sprite_setup() {
     // load the sprite data into an array
     csv_parser parser;
-    dynarray<vec4> sprite_data = parser.vec4_locations_file("sprite_locations.csv");
+    dynarray<vec4> sprite_data;
+    parser.vec4_locations_file("sprite_locations.csv", sprite_data);
 
     // background
     // set the background with a blank texture

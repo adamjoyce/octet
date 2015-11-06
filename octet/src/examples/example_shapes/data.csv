@@ -1,0 +1,12 @@
+bridge_height,,
+5,,
+plank_num,,
+7,,
+hinge_plank_gap,,
+3,,
+spring_plank_gap,,
+3,,
+hinge_plat_pos,,
+-12,6,-5
+spring_plat_pos,,
+-12,6,10

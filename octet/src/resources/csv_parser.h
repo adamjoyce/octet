@@ -24,7 +24,7 @@ namespace octet {
 
     }
 
-    dynarray<vec3> vec3_locations_file(std::string file_path) {
+    void vec4_locations_file(std::string file_path, dynarray<vec4> &arr) {
       std::ifstream file_stream(file_path);
 
       if (!file_stream) {
@@ -32,7 +32,7 @@ namespace octet {
         printf(err.c_str());
       }
 
-      dynarray<vec3> locations;
+      //dynarray<vec4> *locations =  new dynarray<vec4>();
       std::string line = "";
 
       while (file_stream.good()) {
@@ -42,38 +42,48 @@ namespace octet {
         line = line + ',';
         std::stringstream line_stream(line);
 
-        float x, y, z;
+        vec4 data;
         std::string value = "";
 
         while (line_stream.good()) {
           std::getline(line_stream, value, ',');
 
+          // do not include word references
           if (isdigit(value[0]) || value[0] == '-') {
-            // x coordinate
-            x = (float)atof(value.c_str());
-            printf(value.c_str());
+            const float number = (float)atof(value.c_str());
+            data[0] = number;
 
-            // y coordinate
-            std::getline(line_stream, value, ',');
-            y = (float)atof(value.c_str());
-            printf(value.c_str());
+            float num;
+            for (int i = 1; i < 4; i++) {
+              // fetch the next value
+              std::getline(line_stream, value, ',');
+              // if the row does not use the entire vector
+              if (value == "") {
+                // pad the remaining space with 0's
+                num = NULL;
+              } else {
+                num = (float)atof(value.c_str());
+              }
 
-            // z coordinate
-            std::getline(line_stream, value, ',');
-            z = (float)atof(value.c_str());
-            printf(value.c_str());
+              const float data_num = num;
+              data[i] = data_num;
+            }
 
-            printf("\n");
-
-            locations.push_back(vec4(x, y, z));
+            arr.push_back(data);
           }
         }
       }
 
-      return locations;
+      // check output for debugging
+      /*for (int i = 0; i < arr.size(); i++) {
+        for (int j = 0; j < 4; j++) {
+          printf(" %f ", arr[i][j]);
+        }
+        printf("\n");
+      }*/
     }
 
-    dynarray<vec4> vec4_locations_file(std::string file_path) {
+    /*dynarray<vec4> vec4_locations_file(std::string file_path) {
       std::ifstream file_stream(file_path);
 
       if (!file_stream) {
@@ -107,7 +117,7 @@ namespace octet {
             y = (float)atof(value.c_str());
             printf(value.c_str());
 
-            // width
+            // width (or z coordinate)
             std::getline(line_stream, value, ',');
             w = (float)atof(value.c_str());
             printf(value.c_str());
@@ -125,6 +135,6 @@ namespace octet {
       }
 
       return locations;
-    }
+    }*/
   };
 }

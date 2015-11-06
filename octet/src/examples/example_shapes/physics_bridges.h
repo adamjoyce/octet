@@ -16,8 +16,8 @@ namespace octet {
     dynarray<mesh_instance*> mesh_instances;
     dynarray<btRigidBody*> rigid_bodies;
 
-    // the locations of the first hinge and spring platforms
-    dynarray<vec3> platform_locations;
+    // store the bridge data from csv
+    dynarray<vec4> data;
 
     // materials
     material *ground_color;
@@ -27,47 +27,49 @@ namespace octet {
     material *ball_color;
 
     random rand;
+
     // rough frame counter for dropping balls
     int frame;
+
+    // second platform x coordinates
+    int hinge_plat2_pos;
+    int spring_plat2_pos;
 
     //sound_system sound_sys;
     //FMOD::Sound *ball_sound;
 
     enum {
-      bridge_height = 5,
-      plank_num = 7,
-      platform_num = 2,
-      hinge_plank_gap = 3,
-      spring_plank_gap = 3,
+      // data array indices
+      bridge_height = 0,
+      plank_num,
+      hinge_plank_gap,
+      spring_plank_gap,
 
-      // position of the first hinge platform
-      hinge_platform_x = -12,
-      hinge_platform_y = bridge_height + 1,
-      hinge_platform_z = -5,
-      // x position of the second hinge platform
-      hinge_platform2_x = hinge_platform_x + ((plank_num + 1) * hinge_plank_gap),
+      hinge_plat_pos,
+      spring_plat_pos,
 
-      // position of the first spring platform
-      spring_platform_x = -12,
-      spring_platform_y = bridge_height + 1,
-      spring_platform_z = 10,
-      // x position of the second spring platform
-      spring_platform2_x = spring_platform_x + ((plank_num + 1) * spring_plank_gap),
-
+      // mesh and rigid body array indices that do not require csv data to calculate
       ground = 0,
+      first_hinge_platform,
+      last_hinge_platform,
 
-      first_hinge_platform = 1,
-      last_hinge_platform = first_hinge_platform + 1,
-
-      first_hinge_plank,
+      /*first_hinge_plank,
       last_hinge_plank = first_hinge_plank + plank_num - 1,
 
       first_spring_platform,
       last_spring_platform = first_spring_platform + 1,
 
       first_spring_plank,
-      last_spring_plank = first_spring_plank + (plank_num * 2) - 1,
+      last_spring_plank = first_spring_plank + (plank_num * 2) - 1,*/
     };
+
+    // remaining indices for mesh and rigid body arrays based on csv data
+    int first_hinge_plank;
+    int last_hinge_plank;
+    int first_spring_platform;
+    int last_spring_platform;
+    int first_spring_plank;
+    int last_spring_plank;
 
   public:
     physics_bridges(int argc, char **argv) : app(argc, argv) {
@@ -93,14 +95,15 @@ namespace octet {
 
       frame = 0;
 
+      // load platform locations from csv and calculate remaining array indices
+      load_csv_data();
+      calculate_indices();
+
       // ground
       mat4t mat;
       mat.loadIdentity();
       app_scene->add_shape(mat, new mesh_box(vec3(200, 1, 200)), ground_color, false);
       add_to_arrays(ground);
-
-      // load platform locations from csv
-      load_csv_data();
 
       // build the bridges
       create_hinge_bridge();
@@ -133,24 +136,28 @@ namespace octet {
     void create_hinge_bridge() {
       // place the first and last platforms
       mat4t mat;
-      create_platform(mat, platform_color, vec3(hinge_platform_x, hinge_platform_y, hinge_platform_z), bridge_height,
-                                                first_hinge_platform);
-      create_platform(mat, platform_color, vec3(hinge_platform2_x, hinge_platform_y, hinge_platform_z), bridge_height,
-                                                last_hinge_platform);
+      create_platform(mat, platform_color, vec3(data[hinge_plat_pos][0], data[hinge_plat_pos][1], data[hinge_plat_pos][2]),
+                      data[bridge_height][0], first_hinge_platform);
+
+      // calculate the second platform's x coordinate
+      hinge_plat2_pos = data[hinge_plat_pos][0] + ((data[plank_num][0] + 1) * data[hinge_plank_gap][0]);
+      create_platform(mat, platform_color, vec3(hinge_plat2_pos, data[hinge_plat_pos][1], data[hinge_plat_pos][2]),
+                      data[bridge_height][0], last_hinge_platform);
 
       // place and hinge the first plank to the first platform
-      vec3 plank_location = vec3(hinge_platform_x + hinge_plank_gap, hinge_platform_y + (bridge_height - 0.5f), hinge_platform_z);
+      vec3 plank_location = vec3(data[hinge_plat_pos][0] + data[hinge_plank_gap][0], 
+                                 data[hinge_plat_pos][1] + (data[bridge_height][0] - 0.5f), data[hinge_plat_pos][2]);
       create_plank(mat, hinge_plank_color, true, plank_location, first_hinge_plank);
 
       btHingeConstraint *hinge = new btHingeConstraint(*rigid_bodies[first_hinge_platform], *rigid_bodies[first_hinge_plank],
-                                                        btVector3(1.5f, bridge_height - 0.5f, 0), btVector3(-1.5f, 0, 0),
+                                                        btVector3(1.5f, data[bridge_height][0] - 0.5f, 0), btVector3(-1.5f, 0, 0),
                                                         btVector3(0, 0, 1), btVector3(0, 0, 1), false);
       dynamics_world->addConstraint(hinge);
 
       // place and hinge the remaining planks
       int i = first_hinge_plank + 1;
       for (i; i <= last_hinge_plank; i++) {
-        plank_location = vec3(plank_location[0] + hinge_plank_gap, plank_location[1], plank_location[2]); 
+        plank_location = vec3(plank_location[0] + data[hinge_plank_gap][0], plank_location[1], plank_location[2]); 
         create_plank(mat, hinge_plank_color, true, plank_location, i);
 
         hinge = new btHingeConstraint(*rigid_bodies[i-1], *rigid_bodies[i], btVector3(1.5f, 0, 0), btVector3(-1.5f, 0, 0),
@@ -160,7 +167,8 @@ namespace octet {
         // deal with the last plank to platform hinge
         if (i == last_hinge_plank) {
           hinge = new btHingeConstraint(*rigid_bodies[i], *rigid_bodies[last_hinge_platform], btVector3(1.5f, 0, 0), 
-                                         btVector3(-1.5f, bridge_height - 0.5f, 0), btVector3(0, 0, 1), btVector3(0, 0, 1), false);
+                                         btVector3(-1.5f, data[bridge_height][0] - 0.5f, 0), btVector3(0, 0, 1), 
+                                         btVector3(0, 0, 1), false);
           dynamics_world->addConstraint(hinge);
         }
       }
@@ -171,17 +179,19 @@ namespace octet {
     void create_spring_bridge() {
       // place the first and last platforms
       mat4t mat;
-      create_platform(mat, platform_color, vec3(spring_platform_x, spring_platform_y, spring_platform_z), bridge_height, 
-                                                first_spring_platform);
-      create_platform(mat, platform_color, vec3(spring_platform2_x, spring_platform_y, spring_platform_z), bridge_height, 
-                                                last_spring_platform);
+      create_platform(mat, platform_color, vec3(data[spring_plat_pos][0], data[spring_plat_pos][1], data[spring_plat_pos][2]),
+                      data[bridge_height][0], first_spring_platform);
+      // calculate the second platform's x coordinate
+      spring_plat2_pos = data[spring_plat_pos][0] + ((data[plank_num][0] + 1) * data[spring_plank_gap][0]);
+      create_platform(mat, platform_color, vec3(spring_plat2_pos, data[spring_plat_pos][1], data[spring_plat_pos][2]),
+                      data[bridge_height][0], last_spring_platform);
 
       btTransform frame_in_a, frame_in_b;
       btGeneric6DofSpringConstraint *spring;
-      vec3 plank_location = vec3(spring_platform_x, spring_platform_y, spring_platform_z);
+      vec3 plank_location = vec3(data[spring_plat_pos][0], data[spring_plat_pos][1], data[spring_plat_pos][2]);
       for (int i = 0; i <= last_spring_plank - first_spring_plank; i += 2) {
         // create the spring planks
-        float new_x_location = plank_location[0] + spring_plank_gap;
+        float new_x_location = plank_location[0] + data[spring_plank_gap][0];
         plank_location = vec3(new_x_location, plank_location[1], plank_location[2]);
         create_plank(mat, spring_plank_color, true, plank_location, first_spring_plank + i);
 
@@ -259,15 +269,15 @@ namespace octet {
       int spawn_height = bridge_height + 20;
 
       // may screw things up if second platform has a negative x coordinate
-      int hinge_min = hinge_platform_x + hinge_plank_gap;
-      int hinge_max = hinge_platform2_x - hinge_plank_gap;
+      int hinge_min = data[hinge_plat_pos][0] + data[hinge_plank_gap][0];
+      int hinge_max = hinge_plat2_pos - hinge_plank_gap;
 
       if (frame == 0) {
         for (int i = 0; i < 3; i++) {
           // generate randomish positions above each bridge
           r_hinge = rand.get(hinge_min, hinge_max);
           // drop the balls
-          create_ball(mat, vec3(r_hinge, rand.get(20, 30), hinge_platform_z), ball_color);
+          create_ball(mat, vec3(r_hinge, rand.get(20, 30), data[hinge_plat_pos][2]), ball_color);
         }
       } else if (frame % 125 == 0) {
         int index = mesh_instances.size() - 1;
@@ -277,17 +287,37 @@ namespace octet {
 
           mesh_instance *ball = mesh_instances[index-i];
           ball->get_node()->set_linear_velocity(vec3(0, 0, 0));
-          ball->get_node()->set_position(vec3(r_hinge, rand.get(20, 30), hinge_platform_z));
+          ball->get_node()->set_position(vec3(r_hinge, rand.get(20, 30), data[hinge_plat_pos][2]));
         }
       }
 
       frame++;
     }
 
-    /// Loads platform location data from a csv file.
+    /// Loads bridge data from a csv file.
     void load_csv_data() {
       csv_parser parser;
-      platform_locations = parser.vec3_locations_file("platform_locations");
+      parser.vec4_locations_file("data.csv", data);
+
+      // for debugging
+      for (int i = 0; i < data.size(); i++) {
+        for (int j = 0; j < 4; j++) {
+          printf(" %f ", data[i][j]);
+        }
+        printf("\n");
+      }
+    }
+
+    /// Calculate remaining shape mesh and rigid body indicies based on csv data
+    void calculate_indices() {
+      first_hinge_plank = last_hinge_platform + 1;
+      last_hinge_plank = first_hinge_plank + data[plank_num][0] - 1;
+
+      first_spring_platform = last_hinge_plank + 1;
+      last_spring_platform = first_spring_platform + 1;
+
+      first_spring_plank = last_spring_platform + 1;
+      last_spring_plank = first_spring_plank + (data[plank_num][0] * 2) - 1;
     }
 
     /// Called to draw the world.
