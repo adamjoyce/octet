@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
-// (C) Andy Thomason and Adam Joyce 2012-2014
+// (C) Andy Thomason and Adam Joyce 2012-2015
 //
 // Modular Framework for OpenGLES2 rendering on multiple platforms.
 //
@@ -21,6 +21,8 @@
 #include <fstream>
 // for std::getline()
 #include <string>
+// for std::stringstream
+#include <sstream>
 
 namespace octet {
 class sprite {
@@ -413,34 +415,54 @@ class invaderers_app : public octet::app {
   }
  
   /// Load position data from csv file.
-  dynarray<vec2> load_csv_data() {
-    std::ifstream file("sprite_locations.csv");
+  dynarray<vec4> load_csv_data() {
+    std::ifstream file_stream("sprite_locations.csv");
     
-    if (!file) {
+    if (!file_stream) {
       std::string err = "Error loading csv file";
       printf(err.c_str());
     }
 
-    float x, y;
-    dynarray<vec2> sprite_locations;
-    std::string value = "";
+    dynarray<vec4> sprite_locations;
+    std::string line = "";
 
-    while (file.good()) {
-      std::getline(file, value, ',');
+    while (file_stream.good()) {
+      std::getline(file_stream, line, '\n');
 
-      if (isdigit(value[0]) || value[0] == '-') {
-        // x coordinate
-        x = (float)atof(value.c_str());
-        printf(value.c_str());
+      // delimit each row with a comma
+      line = line + ',';
+      std::stringstream line_stream(line);
 
-        // y coordinate
-        std::getline(file, value, ',');
-        y = (float)atof(value.c_str());
-        printf(value.c_str());
+      float x, y, w, h;
+      std::string value = "";
 
-        printf("\n");
+      while (line_stream.good()) {
+        std::getline(line_stream, value, ',');
 
-        sprite_locations.push_back(vec2(x, y));
+        if (isdigit(value[0]) || value[0] == '-') {
+          // x coordinate
+          x = (float)atof(value.c_str());
+          printf(value.c_str());
+
+          // y coordinate
+          std::getline(line_stream, value, ',');
+          y = (float)atof(value.c_str());
+          printf(value.c_str());
+
+          // width
+          std::getline(line_stream, value, ',');
+          w = (float)atof(value.c_str());
+          printf(value.c_str());
+
+          // height
+          std::getline(line_stream, value, ',');
+          h = (float)atof(value.c_str());
+          printf(value.c_str());
+
+          printf("\n");
+
+          sprite_locations.push_back(vec4(x, y, w, h));
+        }
       }
     }
 
@@ -449,39 +471,51 @@ class invaderers_app : public octet::app {
 
   /// Setup sprites.
   void sprite_setup() {
-    dynarray<vec2> locations = load_csv_data();
+    dynarray<vec4> sprite_data = load_csv_data();
 
+    // background
     // set the background with a blank texture
-    sprites[background_sprite].init(NULL, locations[background_sprite][0], locations[background_sprite][1], 6, 6);
+    sprites[background_sprite].init(NULL, sprite_data[background_sprite][0], sprite_data[background_sprite][1], 6, 6);
 
+    // ship
     GLuint ship = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/ship.gif");
-    sprites[ship_sprite].init(ship, locations[ship_sprite][0], locations[ship_sprite][1], 0.25f, 0.25f);
+    sprites[ship_sprite].init(ship, sprite_data[ship_sprite][0], sprite_data[ship_sprite][1],
+                              sprite_data[ship_sprite][2], sprite_data[ship_sprite][3]);
 
+    // gameover
     GLuint GameOver = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/GameOver.gif");
-    sprites[game_over_sprite].init(GameOver, locations[game_over_sprite][0], locations[game_over_sprite][1], 3, 1.5f);
+    sprites[game_over_sprite].init(GameOver, sprite_data[game_over_sprite][0], sprite_data[game_over_sprite][1],
+                                   sprite_data[game_over_sprite][2], sprite_data[game_over_sprite][3]);
 
+    // invaderers
     GLuint invaderer = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/invaderer.gif");
     for (int i = 0; i != num_invaderers; ++i) {
       assert(first_invaderer_sprite + i <= last_invaderer_sprite);
-      sprites[first_invaderer_sprite+i].init(invaderer, locations[first_invaderer_sprite+i][0], locations[first_invaderer_sprite+i][1],
-                                             0.25f, 0.25f);
+      sprites[first_invaderer_sprite+i].init(invaderer, sprite_data[first_invaderer_sprite+i][0], sprite_data[first_invaderer_sprite+i][1],
+                                             sprite_data[first_invaderer_sprite+i][2], sprite_data[first_invaderer_sprite+i][3]);
     }
 
-    // use the bomb texture
+    // bombs
     GLuint bomb = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/bomb.gif");
     for (int i = 0; i != num_bombs; ++i) {
       // create bombs off-screen
-      sprites[first_bomb_sprite+i].init(bomb, locations[first_bomb_sprite][0], locations[first_bomb_sprite][1], 0.0625f, 0.25f);
+      sprites[first_bomb_sprite+i].init(bomb, sprite_data[first_bomb_sprite][0], sprite_data[first_bomb_sprite][1],
+                                        sprite_data[first_bomb_sprite][2], sprite_data[first_bomb_sprite][3]);
       sprites[first_bomb_sprite+i].is_enabled() = false;
     }
 
+    // borders
     int first_border_location = first_bomb_sprite + 1;
     // set the border to white for clarity
     GLuint white = resource_dict::get_texture_handle(GL_RGB, "#ffffff");
-    sprites[first_border_sprite + 0].init(white, locations[first_border_location+0][0], locations[first_border_location+0][1], 6, 0.2f);
-    sprites[first_border_sprite + 1].init(white, locations[first_border_location+1][0], locations[first_border_location+1][1], 6, 0.2f);
-    sprites[first_border_sprite + 2].init(white, locations[first_border_location+2][0], locations[first_border_location+2][1], 0.2f, 6);
-    sprites[first_border_sprite + 3].init(white, locations[first_border_location+3][0], locations[first_border_location+3][1], 0.2f, 6);
+    sprites[first_border_sprite+0].init(white, sprite_data[first_border_location+0][0], sprite_data[first_border_location+0][1],
+                                        sprite_data[first_border_location+0][2], sprite_data[first_border_location+0][3]);
+    sprites[first_border_sprite+1].init(white, sprite_data[first_border_location+1][0], sprite_data[first_border_location+1][1],
+                                        sprite_data[first_border_location+1][2], sprite_data[first_border_location+1][3]);
+    sprites[first_border_sprite+2].init(white, sprite_data[first_border_location+2][0], sprite_data[first_border_location+2][1],
+                                        sprite_data[first_border_location+2][2], sprite_data[first_border_location+2][3]);
+    sprites[first_border_sprite+3].init(white, sprite_data[first_border_location+3][0], sprite_data[first_border_location+3][1],
+                                        sprite_data[first_border_location+3][2], sprite_data[first_border_location+3][3]);
   }
 
   // this is called once OpenGL is initialized
