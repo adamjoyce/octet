@@ -2,6 +2,10 @@ bridge_height,,
 5,,
 plank_num,,
 7,,
+ball_num,,
+3,,
+slab_num,,
+2,,
 hinge_plank_gap,,
 3,,
 spring_plank_gap,,
@@ -10,3 +14,9 @@ hinge_plat_pos,,
 -12,6,-5
 spring_plat_pos,,
 -12,6,10
+plank_size,,
+1,0.5,2
+platform_size,,
+1,5,2
+slab_size,,
+3,0.5,1

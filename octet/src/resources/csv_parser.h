@@ -82,59 +82,5 @@ namespace octet {
         printf("\n");
       }*/
     }
-
-    /*dynarray<vec4> vec4_locations_file(std::string file_path) {
-      std::ifstream file_stream(file_path);
-
-      if (!file_stream) {
-        std::string err = "Error loading csv file";
-        printf(err.c_str());
-      }
-
-      dynarray<vec4> locations;
-      std::string line = "";
-
-      while (file_stream.good()) {
-        std::getline(file_stream, line, '\n');
-
-        // delimit each row with a comma
-        line = line + ',';
-        std::stringstream line_stream(line);
-
-        float x, y, w, h;
-        std::string value = "";
-
-        while (line_stream.good()) {
-          std::getline(line_stream, value, ',');
-
-          if (isdigit(value[0]) || value[0] == '-') {
-            // x coordinate
-            x = (float)atof(value.c_str());
-            printf(value.c_str());
-
-            // y coordinate
-            std::getline(line_stream, value, ',');
-            y = (float)atof(value.c_str());
-            printf(value.c_str());
-
-            // width (or z coordinate)
-            std::getline(line_stream, value, ',');
-            w = (float)atof(value.c_str());
-            printf(value.c_str());
-
-            // height
-            std::getline(line_stream, value, ',');
-            h = (float)atof(value.c_str());
-            printf(value.c_str());
-
-            printf("\n");
-
-            locations.push_back(vec4(x, y, w, h));
-          }
-        }
-      }
-
-      return locations;
-    }*/
   };
 }
