@@ -352,7 +352,7 @@ class invaderers_app : public octet::app {
     }
   }
 
-  // deal with collided invaderer and scale player
+  // deal with collided invaderer
   void collide_invaderer() {
     for (int i = 0; i != num_invaderers; ++i) {
       sprite &invaderer = sprites[first_invaderer_sprite+i];
@@ -365,12 +365,12 @@ class invaderers_app : public octet::app {
   }
 
   // random number generator
-  float random_float(float min, float max) {
+  /*float random_float(float min, float max) {
     float random = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
     float difference = max - min;
     float r = random * difference;
     return r + min;
-  }
+  }*/
 
   void draw_text(texture_shader &shader, float x, float y, float scale, const char *text, vec4 color = vec4(1, 1, 1, 1)) {
     mat4t modelToWorld;
@@ -410,7 +410,7 @@ class invaderers_app : public octet::app {
     // load the sprite data into an array
     csv_parser parser;
     dynarray<vec4> sprite_data;
-    parser.vec4_locations_file("sprite_locations.csv", sprite_data);
+    parser.vec4_file("sprite_locations.csv", sprite_data);
 
     // font
     font_texture = resource_dict::get_texture_handle(GL_RGBA, "assets/big_0.gif");
@@ -422,17 +422,17 @@ class invaderers_app : public octet::app {
     // ship
     GLuint ship = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/ship.gif");
     sprites[ship_sprite].init(ship, sprite_data[ship_sprite][0], sprite_data[ship_sprite][1],
-      sprite_data[ship_sprite][2], sprite_data[ship_sprite][3]);
+                              sprite_data[ship_sprite][2], sprite_data[ship_sprite][3]);
 
     // gameover
     GLuint GameOver = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/GameOver.gif");
     sprites[game_over_sprite].init(GameOver, sprite_data[game_over_sprite][0], sprite_data[game_over_sprite][1],
-      sprite_data[game_over_sprite][2], sprite_data[game_over_sprite][3]);
+                                   sprite_data[game_over_sprite][2], sprite_data[game_over_sprite][3]);
 
     // player win
     GLuint you_win = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/YouWin.gif");
     sprites[player_win].init(you_win, sprite_data[player_win][0], sprite_data[player_win][1],
-      sprite_data[player_win][2], sprite_data[player_win][3]);
+                             sprite_data[player_win][2], sprite_data[player_win][3]);
 
     // invaderers
     GLuint invaderer = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/invaderer.gif");
@@ -450,7 +450,7 @@ class invaderers_app : public octet::app {
       for (int i = 0; i != num_invaderers; i++) {
         assert(first_invaderer_sprite + i <= last_invaderer_sprite);
         sprites[first_invaderer_sprite+i].init(invaderer, sprite_data[first_invaderer_sprite + i][0], sprite_data[first_invaderer_sprite + i][1],
-                                                 sprite_data[first_invaderer_sprite + i][2], sprite_data[first_invaderer_sprite + i][3]);
+                                               sprite_data[first_invaderer_sprite + i][2], sprite_data[first_invaderer_sprite + i][3]);
       }
     }
 
@@ -459,7 +459,7 @@ class invaderers_app : public octet::app {
     for (int i = 0; i != num_bombs; ++i) {
       // create bombs off-screen
       sprites[first_bomb_sprite + i].init(bomb, sprite_data[first_bomb_sprite][0], sprite_data[first_bomb_sprite][1],
-        sprite_data[first_bomb_sprite][2], sprite_data[first_bomb_sprite][3]);
+                                          sprite_data[first_bomb_sprite][2], sprite_data[first_bomb_sprite][3]);
       sprites[first_bomb_sprite + i].is_enabled() = false;
     }
 
@@ -468,13 +468,13 @@ class invaderers_app : public octet::app {
     // set the border to white for clarity
     GLuint white = resource_dict::get_texture_handle(GL_RGB, "#ffffff");
     sprites[first_border_sprite + 0].init(white, sprite_data[first_border_location + 0][0], sprite_data[first_border_location + 0][1],
-      sprite_data[first_border_location + 0][2], sprite_data[first_border_location + 0][3]);
+                                          sprite_data[first_border_location + 0][2], sprite_data[first_border_location + 0][3]);
     sprites[first_border_sprite + 1].init(white, sprite_data[first_border_location + 1][0], sprite_data[first_border_location + 1][1],
-      sprite_data[first_border_location + 1][2], sprite_data[first_border_location + 1][3]);
+                                          sprite_data[first_border_location + 1][2], sprite_data[first_border_location + 1][3]);
     sprites[first_border_sprite + 2].init(white, sprite_data[first_border_location + 2][0], sprite_data[first_border_location + 2][1],
-      sprite_data[first_border_location + 2][2], sprite_data[first_border_location + 2][3]);
+                                          sprite_data[first_border_location + 2][2], sprite_data[first_border_location + 2][3]);
     sprites[first_border_sprite + 3].init(white, sprite_data[first_border_location + 3][0], sprite_data[first_border_location + 3][1],
-      sprite_data[first_border_location + 3][2], sprite_data[first_border_location + 3][3]);
+                                          sprite_data[first_border_location + 3][2], sprite_data[first_border_location + 3][3]);
   }
 
   /// Draw spites.

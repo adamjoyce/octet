@@ -24,7 +24,7 @@ namespace octet {
 
     }
 
-    void vec4_locations_file(std::string file_path, dynarray<vec4> &arr) {
+    void vec4_file(std::string file_path, dynarray<vec4> &arr) {
       std::ifstream file_stream(file_path);
 
       if (!file_stream) {
