@@ -31,12 +31,19 @@ namespace octet {
     // rough frame counter for dropping balls
     int frame;
 
-    // second platform x coordinates
-    int hinge_plat2_pos;
-    int spring_plat2_pos;
+    // for bounce sound
+    ALuint bounce;
+    static const int num_sound_sources = 8;
+    unsigned cur_source;
+    ALuint sources[num_sound_sources];
+    ALuint get_sound_source() { return sources[cur_source++ % num_sound_sources]; }
 
     //sound_system sound_sys;
     //FMOD::Sound *ball_sound;
+
+    // second platform x coordinates
+    int hinge_plat2_pos;
+    int spring_plat2_pos;
 
     enum {
       // data array indices
@@ -106,6 +113,11 @@ namespace octet {
       // build the bridges
       create_hinge_bridge();
       create_spring_bridge();
+
+      // sounds
+      bounce = resource_dict::get_sound_handle(AL_FORMAT_MONO16, "assets/invaderers/bang.wav");
+      cur_source = 0;
+      alGenSources(8, sources);
     }
 
     /// Add a shape's mesh_instance and rigid_body to the corresponding arrays.
@@ -235,12 +247,32 @@ namespace octet {
           btVector3 point_a = point.getPositionWorldOnA();
           btVector3 point_b = point.getPositionWorldOnB();
           double point_dist = point.getDistance();
+          //ALuint source = get_sound_source();
+          //play_sound(source);
           //sound_sys.play_sound(ball_sound, false);
         }
       }
     }
 
-    /// Set up the ball sound.
+    /// Set up the bounce sound.
+    void play_sound() {
+      ALuint source = get_sound_source();
+      // check if something is playing
+      if (isPlaying(source)) {
+        return;
+      }
+
+      alSourcei(source, AL_BUFFER, bounce);
+      alSourcePlay(source);
+    }
+
+    bool isPlaying(ALuint source)
+    {
+      ALenum state;
+      alGetSourcei(source, AL_SOURCE_STATE, &state);
+      return (state == AL_PLAYING);
+    }
+
     /// Issue with fmod in sound_system class that needs resolving.
     /*void sound_setup() {
       sound_sys = sound_system();
@@ -361,6 +393,8 @@ namespace octet {
       }
 
       spawn_objects();
+
+      play_sound();
 
       handle_collisions();
     }
