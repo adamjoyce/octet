@@ -203,9 +203,15 @@ class invaderers_app : public octet::app {
     num_sprites,
   };
 
+  // how quickly the invaderer's bombs move
+  const float slow_bomb_speed = 0.05f;
+  const float fast_bomb_speed = 0.2f;
+
+  // current speed of bombs
+  float bomb_speed;
+
   // timer for bombs
   int bombs_disabled;
-  float bomb_speed;
 
   // accounting for bad guys
   int live_invaderers;
@@ -296,9 +302,9 @@ class invaderers_app : public octet::app {
 
     // set bomb speed based on player movement
     if ((!is_key_down(key_left) && !is_key_down(key_right) && !is_key_down(key_up) && !is_key_down(key_down))) {
-      bomb_speed = 0.05f;
+      bomb_speed = slow_bomb_speed;
     } else {
-      bomb_speed = 0.2f;
+      bomb_speed = fast_bomb_speed;
     }
   }
 
@@ -502,7 +508,7 @@ class invaderers_app : public octet::app {
 
     // bombs
     vec4 bomb_color;
-    if (bomb_speed == 0.2f) {
+    if (bomb_speed == fast_bomb_speed) {
       bomb_color = vec4(1, 0, 0, 1);
     }
     else {
@@ -545,7 +551,7 @@ class invaderers_app : public octet::app {
 
     // sundry counters and game state.
     bombs_disabled = 10;
-    bomb_speed = 0.01f;
+    bomb_speed = slow_bomb_speed;
     live_invaderers = num_invaderers;
     num_lives = 3;
     game_over = false;

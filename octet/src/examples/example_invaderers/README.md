@@ -1,8 +1,14 @@
 # Adam Joyce's Invaderers Hack
+
+### Flavour Text
+The Zorkadian's are causing havoc up and down the intergalactic highway #42, destroying and pillaging
+any ships that cross their path!  Only a direct ram will penetrate their superior missle-invunerable
+shielding technology!  Will the federation ever be free of these pesky invaderers?!
+
 ### The Game
 * The player controls the yellow spaceship
 * He/she must fly into invaderers to destroy them
-* Invaderers launch randomly 'zigzagging' bombs
+* Invaderers launch randomly pathing bombs
 * If the player comes into contact with a bomb, he/she loses a life
 * The player wins if he/she destroys all invaderers before losing all their lives
 
@@ -15,16 +21,17 @@ game project.  It is not a complete list but I have covered the majority of the 
 Brief overview of the gameplay.
 
 ####Ship Movement - .\invaderers_app.h - move_ship()
-An obvious task was to alter the ship movement, from it's rather limited 2 degrees of freedom
-(left and right) to a full 'compass' 8 degrees of freedom.  I had to make sure to introduce new
-collision detection between the ship and the previously untouched upper and lower border.
+An obvious task was to alter the ship movement from it's rather limited 2 degrees of freedom
+(left and right) to a full 'compass-like' 8 degrees of freedom.  In doing this I had to be sure to
+introduce new collision detection checks between the player ship and the previously untouched upper
+and lower borders.
 
 Additionally, I knew that I wanted to have the speed at which the invaderer's bombs move vary
 depending on whether the player ship was in motion.  A check is made in move_ship() to see if
-the player is moving and set the bomb speed accordingly.
+the player is moving and to set the bomb speed accordingly.
 
 ####Bomb Movement - .\invaderers_app.h - move_bombs()
-It was relatively trivial to achieve the 'zigzggy' motion that the invaderer's bombs have.  For
+It was relatively trivial to achieve the 'zigzagy' motion that the invaderer's bombs have.  For
 each bomb I pseudo-randomly generate a new x and y coordinate using the current bomb_speed.  Each
 bomb is then translated to their new coordinate.
 
