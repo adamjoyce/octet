@@ -113,6 +113,9 @@ class sprite {
       -halfWidth,  halfHeight, 0,
     };
 
+    // attribute_pos (=0) is position of each corner
+    // each corner has 3 floats (x, y, z)
+    // there is no gap between the 3 floats and hence the stride is 3*sizeof(float)
     glVertexAttribPointer(attribute_pos, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)vertices);
     glEnableVertexAttribArray(attribute_pos);
 
@@ -139,13 +142,13 @@ class sprite {
     modelToWorld.translate(x, y, 0);
   }
 
-  // position the object relative to another.
+  // position the object relative to another
   void set_relative(sprite &rhs, float x, float y) {
     modelToWorld = rhs.modelToWorld;
     modelToWorld.translate(x, y, 0);
   }
 
-  // return true if this sprite collides with another.
+  // return true if this sprite collides with another
   // note the "const"s which say we do not modify either sprite
   bool collides_with(const sprite &rhs) const {
     float dx = rhs.modelToWorld[3][0] - modelToWorld[3][0];
@@ -181,6 +184,7 @@ class invaderers_app : public octet::app {
     background_sprite = 0,
     ship_sprite,
     game_over_sprite,
+    player_win,
 
     first_invaderer_sprite,
     last_invaderer_sprite = first_invaderer_sprite + num_invaderers - 1,
@@ -217,6 +221,7 @@ class invaderers_app : public octet::app {
 
   // random number generator
   class random randomizer;
+  bool random_spawn = false;
 
   // a texture for our text
   GLuint font_texture;
@@ -237,7 +242,7 @@ class invaderers_app : public octet::app {
 
     if (live_invaderers == 0) {
       game_over = true;
-      sprites[game_over_sprite].translate(-20, 0);
+      sprites[player_win].translate(-20, 0);
     }
   }
 
@@ -416,6 +421,9 @@ class invaderers_app : public octet::app {
     dynarray<vec4> sprite_data;
     parser.vec4_locations_file("sprite_locations.csv", sprite_data);
 
+    // font
+    font_texture = resource_dict::get_texture_handle(GL_RGBA, "assets/big_0.gif");
+
     // background
     // set the background with a blank texture
     sprites[background_sprite].init(NULL, sprite_data[background_sprite][0], sprite_data[background_sprite][1], 6, 6);
@@ -430,12 +438,18 @@ class invaderers_app : public octet::app {
     sprites[game_over_sprite].init(GameOver, sprite_data[game_over_sprite][0], sprite_data[game_over_sprite][1],
                                    sprite_data[game_over_sprite][2], sprite_data[game_over_sprite][3]);
 
+    // player win
+    GLuint you_win = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/YouWin.gif");
+    sprites[player_win].init(you_win, sprite_data[player_win][0], sprite_data[player_win][1],
+                             sprite_data[player_win][2], sprite_data[player_win][3]);
+
     // invaderers
     GLuint invaderer = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/invaderer.gif");
+    // randomise the spawn locations or load from file
     for (int i = 0; i != num_invaderers; ++i) {
       assert(first_invaderer_sprite + i <= last_invaderer_sprite);
-      sprites[first_invaderer_sprite+i].init(invaderer, sprite_data[first_invaderer_sprite+i][0], sprite_data[first_invaderer_sprite+i][1],
-                                             sprite_data[first_invaderer_sprite+i][2], sprite_data[first_invaderer_sprite+i][3]);
+      sprites[first_invaderer_sprite + i].init(invaderer, sprite_data[first_invaderer_sprite + i][0], sprite_data[first_invaderer_sprite + i][1],
+                                               sprite_data[first_invaderer_sprite + i][2], sprite_data[first_invaderer_sprite + i][3]);
     }
 
     // bombs
@@ -471,7 +485,8 @@ class invaderers_app : public octet::app {
     cameraToWorld.loadIdentity();
     cameraToWorld.translate(0, 0, 3);
 
-    font_texture = resource_dict::get_texture_handle(GL_RGBA, "assets/big_0.gif");
+    // seed our random number generator
+    //randomizer.set_seed(time(NULL));
 
     sprite_setup();
 
@@ -494,6 +509,10 @@ class invaderers_app : public octet::app {
   void simulate() {
     if (game_over) {
       if (is_key_down(key_space)) {
+        // random spawn locations for invaderers after first load
+        if (!random_spawn) {
+          random_spawn = true;
+        }
         app_init();
       }
       return;
@@ -515,6 +534,8 @@ class invaderers_app : public octet::app {
     sprites[ship_sprite].render(texture_shader_, cameraToWorld, vec4(1, 1, 0, 1));
 
     sprites[game_over_sprite].render(texture_shader_, cameraToWorld);
+
+    sprites[player_win].render(texture_shader_, cameraToWorld);
 
     // invaderers
     for (int i = first_invaderer_sprite; i <= last_invaderer_sprite; i++) {
