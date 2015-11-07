@@ -221,6 +221,8 @@ class invaderers_app : public octet::app {
 
   // random number generator
   class random randomizer;
+
+  // randomly spawn invaderer locations?
   bool random_spawn = false;
 
   // a texture for our text
@@ -287,11 +289,7 @@ class invaderers_app : public octet::app {
     }   
 
     // set bomb speed based on player movement
-    if ((!is_key_down(key_left) && !is_key_down(key_right) && !is_key_down(key_up) && !is_key_down(key_down)) ||
-        (sprites[ship_sprite].collides_with(sprites[first_border_sprite]) ||
-        sprites[ship_sprite].collides_with(sprites[first_border_sprite+1]) || 
-        sprites[ship_sprite].collides_with(sprites[first_border_sprite+2]) || 
-        sprites[ship_sprite].collides_with(sprites[first_border_sprite+3]))) {
+    if ((!is_key_down(key_left) && !is_key_down(key_right) && !is_key_down(key_up) && !is_key_down(key_down))) {
       bomb_speed = 0.05f;
     } else {
       bomb_speed = 0.2f;
@@ -330,8 +328,8 @@ class invaderers_app : public octet::app {
   // animate the bombs
   void move_bombs() {
     for (int i = 0; i != num_bombs; ++i) {
-      float x = random_float(-bomb_speed, bomb_speed);
-      float y = random_float(-bomb_speed, bomb_speed);
+      float x = randomizer.get(-bomb_speed, bomb_speed);
+      float y = randomizer.get(-bomb_speed, bomb_speed);
       sprite &bomb = sprites[first_bomb_sprite + i];
       if (bomb.is_enabled()) {
         bomb.translate(x, y);
@@ -362,7 +360,6 @@ class invaderers_app : public octet::app {
         invaderer.is_enabled() = false;
         invaderer.translate(20, 0);
         on_hit_invaderer();
-        //sprites[ship_sprite].scale(2.0f, 2.0f);
       }
     }
   }
@@ -408,13 +405,7 @@ class invaderers_app : public octet::app {
     glDrawElements(GL_TRIANGLES, num_quads * 6, GL_UNSIGNED_INT, indices);
   }
 
- public:
-   
-  // this is called when we construct the class
-  invaderers_app(int argc, char **argv) : app(argc, argv), font(512, 256, "assets/big.fnt") {
-  }
-
-  /// Setup sprites.
+  /// Setup the sprites.
   void sprite_setup() {
     // load the sprite data into an array
     csv_parser parser;
@@ -431,48 +422,99 @@ class invaderers_app : public octet::app {
     // ship
     GLuint ship = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/ship.gif");
     sprites[ship_sprite].init(ship, sprite_data[ship_sprite][0], sprite_data[ship_sprite][1],
-                              sprite_data[ship_sprite][2], sprite_data[ship_sprite][3]);
+      sprite_data[ship_sprite][2], sprite_data[ship_sprite][3]);
 
     // gameover
     GLuint GameOver = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/GameOver.gif");
     sprites[game_over_sprite].init(GameOver, sprite_data[game_over_sprite][0], sprite_data[game_over_sprite][1],
-                                   sprite_data[game_over_sprite][2], sprite_data[game_over_sprite][3]);
+      sprite_data[game_over_sprite][2], sprite_data[game_over_sprite][3]);
 
     // player win
     GLuint you_win = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/YouWin.gif");
     sprites[player_win].init(you_win, sprite_data[player_win][0], sprite_data[player_win][1],
-                             sprite_data[player_win][2], sprite_data[player_win][3]);
+      sprite_data[player_win][2], sprite_data[player_win][3]);
 
     // invaderers
     GLuint invaderer = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/invaderer.gif");
-    // randomise the spawn locations or load from file
-    for (int i = 0; i != num_invaderers; ++i) {
-      assert(first_invaderer_sprite + i <= last_invaderer_sprite);
-      sprites[first_invaderer_sprite + i].init(invaderer, sprite_data[first_invaderer_sprite + i][0], sprite_data[first_invaderer_sprite + i][1],
-                                               sprite_data[first_invaderer_sprite + i][2], sprite_data[first_invaderer_sprite + i][3]);
+    if (random_spawn) {
+      // randomise the spawn locations
+      float x, y;
+      for (int i = 0; i != num_invaderers; i++) {
+        x = randomizer.get(-2.75f, 2.75f);
+        y = randomizer.get(-2.75f, 2.75f);
+        assert(first_invaderer_sprite + i <= last_invaderer_sprite);
+        sprites[first_invaderer_sprite+i].init(invaderer, x, y, sprite_data[first_invaderer_sprite+i][2], sprite_data[first_invaderer_sprite+i][3]);
+      }
+    } else {
+      // load positions from csv
+      for (int i = 0; i != num_invaderers; i++) {
+        assert(first_invaderer_sprite + i <= last_invaderer_sprite);
+        sprites[first_invaderer_sprite+i].init(invaderer, sprite_data[first_invaderer_sprite + i][0], sprite_data[first_invaderer_sprite + i][1],
+                                                 sprite_data[first_invaderer_sprite + i][2], sprite_data[first_invaderer_sprite + i][3]);
+      }
     }
 
     // bombs
     GLuint bomb = resource_dict::get_texture_handle(GL_RGBA, "assets/invaderers/bomb.gif");
     for (int i = 0; i != num_bombs; ++i) {
       // create bombs off-screen
-      sprites[first_bomb_sprite+i].init(bomb, sprite_data[first_bomb_sprite][0], sprite_data[first_bomb_sprite][1],
-                                        sprite_data[first_bomb_sprite][2], sprite_data[first_bomb_sprite][3]);
-      sprites[first_bomb_sprite+i].is_enabled() = false;
+      sprites[first_bomb_sprite + i].init(bomb, sprite_data[first_bomb_sprite][0], sprite_data[first_bomb_sprite][1],
+        sprite_data[first_bomb_sprite][2], sprite_data[first_bomb_sprite][3]);
+      sprites[first_bomb_sprite + i].is_enabled() = false;
     }
 
     // borders
     int first_border_location = first_bomb_sprite + 1;
     // set the border to white for clarity
     GLuint white = resource_dict::get_texture_handle(GL_RGB, "#ffffff");
-    sprites[first_border_sprite+0].init(white, sprite_data[first_border_location+0][0], sprite_data[first_border_location+0][1],
-                                        sprite_data[first_border_location+0][2], sprite_data[first_border_location+0][3]);
-    sprites[first_border_sprite+1].init(white, sprite_data[first_border_location+1][0], sprite_data[first_border_location+1][1],
-                                        sprite_data[first_border_location+1][2], sprite_data[first_border_location+1][3]);
-    sprites[first_border_sprite+2].init(white, sprite_data[first_border_location+2][0], sprite_data[first_border_location+2][1],
-                                        sprite_data[first_border_location+2][2], sprite_data[first_border_location+2][3]);
-    sprites[first_border_sprite+3].init(white, sprite_data[first_border_location+3][0], sprite_data[first_border_location+3][1],
-                                        sprite_data[first_border_location+3][2], sprite_data[first_border_location+3][3]);
+    sprites[first_border_sprite + 0].init(white, sprite_data[first_border_location + 0][0], sprite_data[first_border_location + 0][1],
+      sprite_data[first_border_location + 0][2], sprite_data[first_border_location + 0][3]);
+    sprites[first_border_sprite + 1].init(white, sprite_data[first_border_location + 1][0], sprite_data[first_border_location + 1][1],
+      sprite_data[first_border_location + 1][2], sprite_data[first_border_location + 1][3]);
+    sprites[first_border_sprite + 2].init(white, sprite_data[first_border_location + 2][0], sprite_data[first_border_location + 2][1],
+      sprite_data[first_border_location + 2][2], sprite_data[first_border_location + 2][3]);
+    sprites[first_border_sprite + 3].init(white, sprite_data[first_border_location + 3][0], sprite_data[first_border_location + 3][1],
+      sprite_data[first_border_location + 3][2], sprite_data[first_border_location + 3][3]);
+  }
+
+  /// Draw spites.
+  void draw_sprites() {
+    sprites[background_sprite].render(space_shader_, cameraToWorld);
+
+    sprites[ship_sprite].render(texture_shader_, cameraToWorld, vec4(1, 1, 0, 1));
+
+    sprites[game_over_sprite].render(texture_shader_, cameraToWorld);
+
+    sprites[player_win].render(texture_shader_, cameraToWorld);
+
+    // invaderers
+    for (int i = first_invaderer_sprite; i <= last_invaderer_sprite; i++) {
+      sprites[i].render(texture_shader_, cameraToWorld, vec4(0.05f, 0.45f, 0.03f, 1));
+    }
+
+    // bombs
+    vec4 bomb_color;
+    if (bomb_speed == 0.2f) {
+      bomb_color = vec4(1, 0, 0, 1);
+    }
+    else {
+      bomb_color = vec4(1, 0.68f, 0.68f, 1);
+    }
+
+    for (int i = first_bomb_sprite; i <= last_bomb_sprite; i++) {
+      sprites[i].render(texture_shader_, cameraToWorld, bomb_color);
+    }
+
+    // borders
+    for (int i = first_border_sprite; i <= last_border_sprite; i++) {
+      sprites[i].render(texture_shader_, cameraToWorld);
+    }
+  }
+
+ public:
+   
+  // this is called when we construct the class
+  invaderers_app(int argc, char **argv) : app(argc, argv), font(512, 256, "assets/big.fnt") {
   }
 
   // this is called once OpenGL is initialized
@@ -484,9 +526,6 @@ class invaderers_app : public octet::app {
     // set up the matrices with a camera 5 units from the origin
     cameraToWorld.loadIdentity();
     cameraToWorld.translate(0, 0, 3);
-
-    // seed our random number generator
-    //randomizer.set_seed(time(NULL));
 
     sprite_setup();
 
@@ -525,41 +564,6 @@ class invaderers_app : public octet::app {
     move_bombs();
     
     collide_invaderer();
-  }
-
-  /// Draw spites.
-  void draw_sprites() {
-    sprites[background_sprite].render(space_shader_, cameraToWorld);
-
-    sprites[ship_sprite].render(texture_shader_, cameraToWorld, vec4(1, 1, 0, 1));
-
-    sprites[game_over_sprite].render(texture_shader_, cameraToWorld);
-
-    sprites[player_win].render(texture_shader_, cameraToWorld);
-
-    // invaderers
-    for (int i = first_invaderer_sprite; i <= last_invaderer_sprite; i++) {
-      sprites[i].render(texture_shader_, cameraToWorld, vec4(0.05f, 0.45f, 0.03f, 1));
-    }
-
-    // bombs
-    vec4 bomb_color;
-    if (bomb_speed == 0.2f) {
-      bomb_color = vec4(1, 0, 0, 1);
-    }
-    else {
-      bomb_color = vec4(1, 0.68f, 0.68f, 1);
-    }
-
-    for (int i = first_bomb_sprite; i <= last_bomb_sprite; i++) {
-      sprites[i].render(texture_shader_, cameraToWorld, bomb_color);
-    }
-
-    // borders
-    for (int i = first_border_sprite; i <= last_border_sprite; i++) {
-      sprites[i].render(texture_shader_, cameraToWorld);
-    }
-
   }
 
   // this is called to draw the world
