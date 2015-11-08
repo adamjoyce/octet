@@ -1,6 +1,6 @@
 # Bullet Physics Demo by Adam Joyce
 
-![Physics Demo](https://raw.githubusercontent.com/adamjoyce/octet/tree/working/octet/src/examples/example_shapes/README_images/bridges.PNG "Physics Bridges")
+![Physics Demo](https://raw.githubusercontent.com/adamjoyce/octet/working/octet/src/examples/example_shapes/README_images/bridges.PNG "Physics Bridges")
 
 ### Introduction
 This is a small Bullet Physics demo written in OpenGL and C++.  The demo generates two bridges, one made
@@ -28,7 +28,7 @@ and adjust the plank gaps for the hinge bridge to reposition the hinges.
 
 ### Hinge Constraints
 
-![Hinge Bridge](https://raw.githubusercontent.com/adamjoyce/octet/tree/working/octet/src/examples/example_shapes/README_images/hinge_bridge.PNG "Hinge Bridge")
+![Hinge Bridge](https://raw.githubusercontent.com/adamjoyce/octet/working/octet/src/examples/example_shapes/README_images/hinge_bridge.PNG "Hinge Bridge")
 
 #### Hinge Bridge Construction - .\physics_bridges.h - create_hinge_bridge()
 Both bridge constructions are based largely on the position of the first platform.  This position information
@@ -44,7 +44,7 @@ the hinges unrestricted to fall naturally.
 
 ### Spring Constraints
 
-![Spring Bridge](https://raw.githubusercontent.com/adamjoyce/octet/tree/working/octet/src/examples/example_shapes/README_images/spring_bridge.PNG "Spring Bridge")
+![Spring Bridge](https://raw.githubusercontent.com/adamjoyce/octet/working/octet/src/examples/example_shapes/README_images/spring_bridge.PNG "Spring Bridge")
 
 #### Spring Bridge Construction - .\physics_bridges.h
 Similarly to the hinge bridge, the first and second platforms are constructed and placed first.  To 
@@ -57,7 +57,7 @@ are set.
 
 ### Collision Callback
 
-![Collision Objects](https://raw.githubusercontent.com/adamjoyce/octet/tree/working/octet/src/examples/example_shapes/README_images/collision_objects.PNG "Collision Objects")
+![Collision Objects](https://raw.githubusercontent.com/adamjoyce/octet/working/octet/src/examples/example_shapes/README_images/collision_objects.PNG "Collision Objects")
 
 #### Handle Collisions - .\physics_bridges.h - handle_collisions()
 Here I check for collisions by finding the number of contact points in each contact manifold.  The 'bang'
