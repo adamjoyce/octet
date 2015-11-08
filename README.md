@@ -1,3 +1,3 @@
-[Introduction to Programming Assignment](https://github.com/adamjoyce/octet/tree/working/octet/src/examples/example_invaderers)
-
-[Tools and MiddleWare Assignment]
+[Introduction to Programming Assignment](https://github.com/adamjoyce/octet/tree/8_nov_assignments/octet/src/examples/example_shapes)
+#
+[Tools and MiddleWare Assignment](https://github.com/adamjoyce/octet/tree/8_nov_assignments/octet/src/examples/example_shapes)
