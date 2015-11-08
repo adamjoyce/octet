@@ -27,15 +27,15 @@ introduce new collision detection checks between the player ship and the previou
 and lower borders.
 
 Additionally, I knew that I wanted to have the speed at which the invaderer's bombs move vary
-depending on whether the player ship was in motion.  A check is made in move_ship() to see if
-the player is moving and to set the bomb speed accordingly.
+depending on whether the player ship was in motion.  A check is made to see if the player is 
+moving and to set the bomb speed accordingly.
 
 ####Bomb Movement - .\invaderers_app.h - move_bombs()
-It was relatively trivial to achieve the 'zigzagy' motion that the invaderer's bombs have.  For
-each bomb I pseudo-randomly generate a new x and y coordinate using the current bomb_speed.  Each
-bomb is then translated to their new coordinate.
+It was relatively trivial to achieve the bomb's 'zigzaggy' motion.  For each bomb I pseudo-randomly 
+generate a new x and y coordinate using the current bomb speed.  Each bomb is then translated to 
+their new coordinate location.
 
-Since there is a finite number of bombs in play at any one time I recycle any bombs that hit the 
+Since there is a finite number of bombs in play at any one time I recycle the bombs that hit the 
 screen borders.  These are then free to be fired again by an invaderer.
 
 ####Ship Collisions - .\invaderers_app.h - collide_invaderer()
@@ -52,12 +52,26 @@ I chose to read in all sprite location and dimension information from a csv file
 simple csv parser.  The parser contains a single function that takes the file path of the csv document
 and a reference to a vec4 array where the appropriate data is assigned.
 
-I needed to ignore various data when parsing the csv file such as identification words and newline 
-characters.  Due to the format of my csv file's data, I also needed to place a delimiting
-comma at the end of all rows that contained the full four values.
+I did originally plan to read in all sprite data from the same csv file.  This proved tricky due to
+the way invaderers_app.h relies on it's enum for indicies.  Placing variables such as 'num_borders'
+in the csv would mean that they could not be static constants and thus would not be able to be used
+to calculate the 'last_border_sprite' index.
 
-To provide greater flexibility I padded out any row with fewer than four values with zeros.
+This in itself isn't a big issue as you could simulate the latter half of the enum with a struct
+and function that calculates the index values based on the one that came before.  However num_sprites
+would not be able to be used to declare the sprites array, which would likely mean needing to use
+a dynamic array instead.
 
+I would be interested to hear if Andy has an idea of an elegant solution to this problem that I may
+have missed that wouldn't require using a different type of array or rewriting large portions of
+the program's code.
+
+I needed to ignore specific data when parsing the csv file.  Identification words and newline 
+characters for example.  Due to the format of my csv file's data, I also needed to place a delimiting
+comma at the end of all rows that contained all full four values.
+
+To provide the function with greater flexibility I padded out any row with fewer than four values with
+zeros.
 
 ####Sprite Setup - .\invaderers_app.h - sprite_setup()
 After reading all the csv data I use an array to initialise all the sprites.
@@ -71,9 +85,9 @@ locations are read from the csv, on each successive replay their locations are p
 Brief overview of the game's shaders.
 
 ####Shaders - octet\src\shaders\texture_shader.h & space_shader.h
-To begin, to get familiar with both vertex and fragment shaders I attempted to alter the existing 
-texture_shader to allow a colour to be passed to it.  This colour is applied to the texture
-on the sprite that is rendering.
+To begin, to familiarise myself with both vertex and fragment shaders I attempted to alter the existing 
+texture_shader class, allowing a colour to be passed to it.  This colour is applied to the texture
+on the rendering sprite.
 
 Once familiar, I wrote a simple space_shader that creates a space background theme.  I overloaded
 the existing render function in the sprite class to take a space_shader parameter.

@@ -203,6 +203,9 @@ class invaderers_app : public octet::app {
     num_sprites,
   };
 
+  // player ship speed
+  const float ship_speed = 0.1f;
+
   // how quickly the invaderer's bombs move
   const float slow_bomb_speed = 0.05f;
   const float fast_bomb_speed = 0.2f;
@@ -271,7 +274,6 @@ class invaderers_app : public octet::app {
     }
   }
 
-  float ship_speed = 0.1f;
   /// Use the keyboard to move the player ship.
   void move_ship() {
     // down and up arrows
