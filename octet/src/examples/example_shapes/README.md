@@ -95,4 +95,4 @@ the bridges.  This is because the objects are being randomly placed in a collidi
 the bridges, thereby counting as the initial collision.
 
 
-[Demo Youtube Video]([Demo Gameplay Youtube Video](https://www.youtube.com/watch?v=CTASXvUjPmk "Demo Youtube Video")
+[Demo Youtube Video](https://www.youtube.com/watch?v=CTASXvUjPmk "Demo Youtube Video")
