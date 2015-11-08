@@ -12,8 +12,6 @@
 
 #include "../../octet.h"
 
-#include "example_shapes.h"
-#include "hello_bullet.h"
 #include "physics_bridges.h"
 
 /// Create a box with octet
