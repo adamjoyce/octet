@@ -5,7 +5,7 @@
 // for csv_parser
 #include "../../resources/csv_parser.h"
 // FMOD Code
-#include "sound_system.h"
+//#include "sound_system.h"
 
 namespace octet {
   class physics_bridges : public app {
@@ -230,7 +230,6 @@ namespace octet {
         spring->setAngularUpperLimit(btVector3(0, 0, 0));
 
         spring->enableSpring(1, true);
-        spring->enableSpring(0, false);
         spring->setStiffness(1, 19);
         spring->setDamping(1, 0.5f);
         //spring->setEquilibriumPoint();
