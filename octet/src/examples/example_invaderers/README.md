@@ -1,5 +1,5 @@
 # Zorkadian Harassment 
-## Adam Joyce's Invaderer Hack
+Adam Joyce's Invaderer Hack
 
 ### Flavour Text
 The Zorkadian's are causing havoc up and down the intergalactic highway #42, destroying and pillaging
