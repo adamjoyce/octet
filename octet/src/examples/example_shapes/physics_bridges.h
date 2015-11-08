@@ -2,13 +2,16 @@
 // Author: Adam Joyce
 // Version: 2.3
 
+// for csv_parser
 #include "../../resources/csv_parser.h"
-//#include "sound_system.h"
+// FMOD Code
+#include "sound_system.h"
 
 namespace octet {
   class physics_bridges : public app {
     // scene for drawing objects
     ref<visual_scene> app_scene;
+
     // dynamics world
     btDynamicsWorld *dynamics_world;
 
@@ -26,24 +29,22 @@ namespace octet {
     material *spring_plank_color;
     material *ball_color;
 
-    random rand;
-
-    // rough frame counter for dropping balls
-    int frame;
-
     // for bounce sound
-    ALuint bounce;
-    static const int num_sound_sources = 8;
-    unsigned cur_source;
+    ALuint bang;
+    int source_index;
+    bool sound_played;
+    static const int num_sound_sources = 1;
     ALuint sources[num_sound_sources];
-    ALuint get_sound_source() { return sources[cur_source++ % num_sound_sources]; }
 
+    // FMOD Code
     //sound_system sound_sys;
     //FMOD::Sound *ball_sound;
 
-    // second platform x coordinates
-    int hinge_plat2_pos;
-    int spring_plat2_pos;
+    // used to generate random spawn locations
+    random rand;
+
+    // rough frame counter for dropping shapes
+    int frame;
 
     enum {
       // data array indices
@@ -63,6 +64,9 @@ namespace octet {
       platform_size,
       slab_size,
 
+      camera_pos,
+      camera_rot,
+
       // mesh and rigid body array indices that do not require csv data to calculate
       ground = 0,
       first_hinge_platform,
@@ -76,6 +80,10 @@ namespace octet {
     int first_ball, last_ball;
     int first_slab, last_slab;
 
+    // second platform x coordinates
+    int hinge_plat2_pos;
+    int spring_plat2_pos;
+
   public:
     physics_bridges(int argc, char **argv) : app(argc, argv) {
     }
@@ -86,10 +94,14 @@ namespace octet {
   private:
     /// Called once OpenGL is initialised.
     void app_init() {
+      load_csv_data();
+
       app_scene = new visual_scene();
       app_scene->create_default_camera_and_lights();
-      app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, 40, 0));
-      app_scene->get_camera_instance(0)->get_node()->rotate(-45, vec3(1, 0, 0));
+      app_scene->get_camera_instance(0)->get_node()->translate(vec3(data[camera_pos][0], data[camera_pos][1],
+                                                               data[camera_pos][2]));
+      app_scene->get_camera_instance(0)->get_node()->rotate(data[camera_rot][0], vec3(data[camera_rot][1],
+                                                            data[camera_rot][2], data[camera_rot][3]));
       dynamics_world = app_scene->get_dynamics_world();
 
       ground_color = new material(vec4(0, 1, 0, 1));
@@ -98,10 +110,6 @@ namespace octet {
       spring_plank_color = new material(vec4(1, 1, 0, 1));
       ball_color = new material(vec4(0, 0, 0, 1));
 
-      frame = 0;
-
-      // load platform locations from csv and calculate remaining array indices
-      load_csv_data();
       calculate_indices();
 
       // ground
@@ -115,18 +123,23 @@ namespace octet {
       create_spring_bridge();
 
       // sounds
-      bounce = resource_dict::get_sound_handle(AL_FORMAT_MONO16, "assets/invaderers/bang.wav");
-      cur_source = 0;
-      alGenSources(8, sources);
+      bang = resource_dict::get_sound_handle(AL_FORMAT_MONO16, "assets/invaderers/bang.wav");
+      alGenSources(num_sound_sources, sources);
+      source_index = 0;
+      sound_played = false;
+
+      frame = 0;
     }
 
     /// Add a shape's mesh_instance and rigid_body to the corresponding arrays.
     void add_to_arrays(int index) {
+      // could just use app_scene->get_mesh_instance() to retrieve any mesh instances
+      // for simplicity I build a new array
       mesh_instances.push_back(app_scene->get_mesh_instance(index));
       rigid_bodies.push_back(mesh_instances[index]->get_node()->get_rigid_body());
     }
 
-    /// Creates a box in a certain size, color, and location.
+    /// Creates a box with a certain size, color, and location.
     void create_box(vec3 box_size, mat4t mat, vec3 location, material *color, bool is_dynamic, int array_index) {
       mat.loadIdentity();
       mat.translate(location);
@@ -243,36 +256,41 @@ namespace octet {
         // for each contact point in that manifold
         for (int j = 0; j < num_contacts; j++) {
           // get the contact information
-          btManifoldPoint &point = contact_manifold->getContactPoint(j);
+          /*btManifoldPoint &point = contact_manifold->getContactPoint(j);
           btVector3 point_a = point.getPositionWorldOnA();
           btVector3 point_b = point.getPositionWorldOnB();
-          double point_dist = point.getDistance();
-          //ALuint source = get_sound_source();
-          //play_sound(source);
+          double point_dist = point.getDistance();*/
+
+          if (!sound_played) {
+            play_sound();
+            sound_played = true;
+          }
+
+          // print something when collision occurs
+          //printf(" %s ", "collide");
+
+          // FMOD Code
           //sound_sys.play_sound(ball_sound, false);
         }
       }
     }
 
-    /// Set up the bounce sound.
+    /// Set up the bang sound.
     void play_sound() {
       ALuint source = get_sound_source();
-      // check if something is playing
-      if (isPlaying(source)) {
-        return;
-      }
-
-      alSourcei(source, AL_BUFFER, bounce);
+      alSourcei(source, AL_BUFFER, bang);
       alSourcePlay(source);
     }
 
-    bool isPlaying(ALuint source)
-    {
-      ALenum state;
-      alGetSourcei(source, AL_SOURCE_STATE, &state);
-      return (state == AL_PLAYING);
+    /// A sound source.
+    ALuint get_sound_source() {
+      if (source_index = num_sound_sources) {
+        source_index = 0;
+      }
+      return sources[source_index++];
     }
 
+    /// FMOD Code
     /// Issue with fmod in sound_system class that needs resolving.
     /*void sound_setup() {
       sound_sys = sound_system();
@@ -293,6 +311,7 @@ namespace octet {
 
       float random_x, random_y;
       int spawn_height = data[bridge_height][0] + (data[bridge_height][0] * 3);
+      int max_spawn_height = spawn_height + 10;
 
       int hinge_min = data[hinge_plat_pos][0] + data[hinge_plank_gap][0];
       int hinge_max = hinge_plat2_pos - data[hinge_plank_gap][0];
@@ -304,7 +323,7 @@ namespace octet {
         for (int i = 0; i < data[ball_num][0]; i++) {
           // generate randomish positions above the bridge
           random_x = rand.get(hinge_min, hinge_max);
-          random_y = rand.get(spawn_height, spawn_height + 10);
+          random_y = rand.get(spawn_height, max_spawn_height);
           create_ball(mat, vec3(random_x, random_y, data[hinge_plat_pos][2]), ball_color, first_ball + i);
         }
 
@@ -312,7 +331,7 @@ namespace octet {
         for (int i = 0; i < data[slab_num][0]; i++) {
           // generate randomish positions above the bridge
           random_x = rand.get(spring_min, spring_max);
-          random_y = rand.get(spawn_height, spawn_height + 10);
+          random_y = rand.get(spawn_height, max_spawn_height);
           create_box(data[slab_size], mat, vec3(random_x, random_y, data[spring_plat_pos][2]), ball_color, true, first_slab + i);
         }
       } else if (frame % 125 == 0) {
@@ -320,7 +339,7 @@ namespace octet {
         for (int i = 0; i < data[ball_num][0]; i++) {
           // generate randomish positions above each bridge
           random_x = rand.get(hinge_min, hinge_max);
-          random_y = rand.get(spawn_height, spawn_height + 10);
+          random_y = rand.get(spawn_height, max_spawn_height);
 
           mesh_instance *ball = mesh_instances[first_ball+i];
           ball->get_node()->set_linear_velocity(vec3(0, 0, 0));
@@ -331,29 +350,30 @@ namespace octet {
         for (int i = 0; i < data[slab_num][0]; i++) {
           // generate randomish positions above each bridge
           random_x = rand.get(spring_min, spring_max);
-          random_y = rand.get(spawn_height, spawn_height + 10);
+          random_y = rand.get(spawn_height, max_spawn_height);
 
           mesh_instance *slab = mesh_instances[first_slab+i];
           slab->get_node()->set_linear_velocity(vec3(0, 0, 0));
           slab->get_node()->set_position(vec3(random_x, random_y, data[spring_plat_pos][2]));
         }
+        // reset to allow sound to be played on next collision
+        sound_played = false; 
       }
-
       frame++;
     }
 
     /// Loads bridge data from a csv file.
     void load_csv_data() {
       csv_parser parser;
-      parser.vec4_locations_file("data.csv", data);
+      parser.vec4_file("data.csv", data);
 
       // for debugging
-      for (int i = 0; i < data.size(); i++) {
+      /*for (int i = 0; i < data.size(); i++) {
         for (int j = 0; j < 4; j++) {
           printf(" %f ", data[i][j]);
         }
         printf("\n");
-      }
+      }*/
     }
 
     /// Calculate remaining shape mesh and rigid body indicies based on csv data
@@ -386,15 +406,7 @@ namespace octet {
       // draw the scene
       app_scene->render((float)vx / vy);
 
-      mat4t mat;
-      if (is_key_down(key_space)) {
-        create_box(data[slab_size], mat, vec3(data[spring_plat_pos][0] + 6, data[spring_plat_pos][1] + 20, data[spring_plat_pos][2]),
-                   ball_color, true, mesh_instances.size());
-      }
-
       spawn_objects();
-
-      play_sound();
 
       handle_collisions();
     }

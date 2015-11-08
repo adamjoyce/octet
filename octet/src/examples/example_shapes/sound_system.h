@@ -2,7 +2,11 @@
 // Some comments may be unnecessarily explicit for the author's own educational purposes.
 //
 // Author: Adam Joyce
-// Version: 1.03 - Issue with 'bod' identifier in fmod.hpp and fmod.h - unsure of the exact issue
+// Version: 1.03
+
+// Issue with 'bod' identifier in fmod.hpp and fmod.h (when including this call - 
+// unsure of the exact issue - seems to be related to a btMultiBodyDynamicsWorld.cpp,
+// probhably something simple I am missing!
 //
 // API: http://www.fmod.org/documentation/#content/generated/lowlevel_api.html
 // Reference: https://cuboidzone.wordpress.com/2013/07/26/tutorial-implementing-fmod/
