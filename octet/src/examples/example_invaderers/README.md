@@ -20,7 +20,7 @@ game project.  It is not a complete list but I have covered the majority of the 
 
 Brief overview of the gameplay.
 
-####Ship Movement - .\invaderers_app.h - move_ship()
+####Ship Movement - .\invaderers_app.h - move_ship() 
 An obvious task was to alter the ship movement from it's rather limited 2 degrees of freedom
 (left and right) to a full 'compass-like' 8 degrees of freedom.  In doing this I had to be sure to
 introduce new collision detection checks between the player ship and the previously untouched upper
@@ -37,6 +37,8 @@ their new coordinate location.
 
 Since there is a finite number of bombs in play at any one time I recycle the bombs that hit the 
 screen borders.  These are then free to be fired again by an invaderer.
+
+![bombs](https://github.com/adamjoyce/octet/tree/working/octet/src/examples/example_invaderers/README_pictures/bombs.png "Bombs")
 
 ####Ship Collisions - .\invaderers_app.h - collide_invaderer()
 I needed a function that would check for collisions between the ship and active invaderers.  This is
