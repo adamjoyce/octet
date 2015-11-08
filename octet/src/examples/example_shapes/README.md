@@ -28,8 +28,6 @@ and adjust the plank gaps for the hinge bridge to reposition the hinges.
 
 ### Hinge Constraints
 
-![Hinge Bridge](https://raw.githubusercontent.com/adamjoyce/octet/working/octet/src/examples/example_shapes/README_images/hinge_bridge.PNG "Hinge Bridge")
-
 #### Hinge Bridge Construction - .\physics_bridges.h - create_hinge_bridge()
 Both bridge constructions are based largely on the position of the first platform.  This position information
 is read in from a csv file.  I begin by placing the first platform and using its x coordinate information
@@ -42,9 +40,9 @@ I chose to avoid setting a particular angle limit for the bridge's hinges.  Due 
 acting as anchors at either end of the bridge, I felt that the best 'rope bridge' effect comes when leaving
 the hinges unrestricted to fall naturally.
 
-### Spring Constraints
+![Hinge Bridge](https://raw.githubusercontent.com/adamjoyce/octet/working/octet/src/examples/example_shapes/README_images/hinge_bridge.PNG "Hinge Bridge")
 
-![Spring Bridge](https://raw.githubusercontent.com/adamjoyce/octet/working/octet/src/examples/example_shapes/README_images/spring_bridge.PNG "Spring Bridge")
+### Spring Constraints
 
 #### Spring Bridge Construction - .\physics_bridges.h
 Similarly to the hinge bridge, the first and second platforms are constructed and placed first.  To 
@@ -55,9 +53,9 @@ After attaching each spring to their anchor and plank I set linear limits and th
 the planks uniform.  Finally the spring is enabled in the y axis and its stiffness and damping values 
 are set.
 
-### Collision Callback
+![Spring Bridge](https://raw.githubusercontent.com/adamjoyce/octet/working/octet/src/examples/example_shapes/README_images/spring_bridge.PNG "Spring Bridge")
 
-![Collision Objects](https://raw.githubusercontent.com/adamjoyce/octet/working/octet/src/examples/example_shapes/README_images/collision_objects.PNG "Collision Objects")
+### Collision Callback
 
 #### Handle Collisions - .\physics_bridges.h - handle_collisions()
 Here I check for collisions by finding the number of contact points in each contact manifold.  The 'bang'
@@ -65,6 +63,8 @@ sound is set to play on the first contact point detected.
 
 I have left in a few lines of commented out code that gather useful (but in this case unnecessary) contact
 information.
+
+![Collision Objects](https://raw.githubusercontent.com/adamjoyce/octet/working/octet/src/examples/example_shapes/README_images/collision_objects.PNG "Collision Objects")
 
 ### Other Functions
 
