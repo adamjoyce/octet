@@ -17,6 +17,7 @@ shielding technology!  Will the federation ever be free of these pesky invaderer
 This document is here to highlight the functions and classes that I have written/edited for this
 game project.  It is not a complete list but I have covered the majority of the key areas below.
 
+
 ### Gameplay
 
 Brief overview of the gameplay.
@@ -47,6 +48,7 @@ called on every step of the program and disables any collided invaderers.
 
 ![Collision](https://raw.githubusercontent.com/adamjoyce/octet/working/octet/src/examples/example_invaderers/README_pictures/collision.PNG "Collision")
 
+
 ###Setup
 
 Brief overview of the game's 'setup' process.
@@ -73,9 +75,9 @@ the program's code.
 
 I needed to ignore specific data when parsing the csv file.  Identification words and newline 
 characters for example.  Due to the format of my csv file's data, I also needed to place a delimiting
-comma at the end of all rows that contained all full four values.
+comma at the end of all rows that contained all four values.
 
-To provide the function with greater flexibility I padded out any row with fewer than four values with
+To provide the function with greater flexibility I padded out any row containing fewer than four values with
 zeros.
 
 #### Sprite Setup - .\invaderers_app.h - sprite_setup()
@@ -104,4 +106,4 @@ It was fairly straight forward to render each of the sprites.  All bombs are ren
 a light or dark red colour depending on the bomb's current speed.
 
 
-[Demo Gameplay Youtube Video](https://www.youtube.com/watch?v=CTASXvUjPmk "invaderers_demo Youtube Video")
+[Gameplay Demo Youtube Video](https://www.youtube.com/watch?v=CTASXvUjPmk "invaderers_demo Youtube Video")
