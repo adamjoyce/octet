@@ -39,13 +39,13 @@ their new coordinate location.
 Since there is a finite number of bombs in play at any one time I recycle the bombs that hit the 
 screen borders.  These are then free to be fired again by an invaderer.
 
-![Bombs](https://github.com/adamjoyce/octet/tree/working/octet/src/examples/example_invaderers/README_pictures/bombs.PNG "Bombs")
+![Bombs](https://raw.github.com/adamjoyce/octet/tree/working/octet/src/examples/example_invaderers/README_pictures/bombs.PNG "Bombs")
 
 #### Ship Collisions - .\invaderers_app.h - collide_invaderer()
 I needed a function that would check for collisions between the ship and active invaderers.  This is
 called on every step of the program and disables any collided invaderers.
 
-![Collision](https://github.com/adamjoyce/octet/tree/working/octet/src/examples/example_invaderers/README_pictures/collision.PNG "Collision")
+![Collision](https://raw.github.com/adamjoyce/octet/tree/working/octet/src/examples/example_invaderers/README_pictures/collision.PNG "Collision")
 
 ###Setup
 
@@ -97,7 +97,7 @@ on the rendering sprite.
 Once familiar, I wrote a simple space_shader that creates a space background theme.  I overloaded
 the existing render function in the sprite class to take a space_shader parameter.
 
-![Space](https://github.com/adamjoyce/octet/tree/working/octet/src/examples/example_invaderers/README_pictures/space.PNG "Space")
+![Space](https://raw.github.com/adamjoyce/octet/tree/working/octet/src/examples/example_invaderers/README_pictures/space.PNG "Space")
 
 #### Drawing Sprites - .\invaderers_app.h - draw_sprites()
 It was fairly straight forward to render each of the sprites.  All bombs are rendered with either
