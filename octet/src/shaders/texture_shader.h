@@ -57,7 +57,7 @@ namespace octet { namespace shaders {
       colorIndex_ = glGetUniformLocation(program(), "color");
     }
 
-    void render(const mat4t &modelToProjection, int sampler, vec4 color) {
+    void render(const mat4t &modelToProjection, int sampler, vec4 &color) {
       // tell openGL to use the program
       shader::render();
 

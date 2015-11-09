@@ -657,10 +657,12 @@ namespace octet { namespace scene {
       }
     }
 
+    #ifdef OCTET_BULLET
     /// Get dyanmics world.
     btDynamicsWorld *get_dynamics_world() {
       return world;
     }
+    #endif
   };
 }}
 

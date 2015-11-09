@@ -11,6 +11,11 @@
 *.user
 *.opensdf
 *.obj
+*.ilk
+*.log
+*.pdb
+*.tlog
+*.idb
 .DS_Store
 xcuserdata
 log.txt
