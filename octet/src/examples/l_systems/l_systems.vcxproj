@@ -13,8 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{6722CC8F-3FC9-4B11-B7AE-918054DD5ACA}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>example_box</RootNamespace>
-    <ProjectName>l_systems</ProjectName>
+    <RootNamespace>l_systems</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -216,7 +215,8 @@
     <ClInclude Include="..\..\shaders\shader.h" />
     <ClInclude Include="..\..\shaders\shaders.h" />
     <ClInclude Include="..\..\shaders\texture_shader.h" />
-    <ClInclude Include="example_box.h" />
+    <ClInclude Include="l_system_parser.h" />
+    <ClInclude Include="l_systems.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\resources\mesh_builder.inl" />

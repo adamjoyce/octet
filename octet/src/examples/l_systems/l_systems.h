@@ -1,39 +1,43 @@
-// L Systems
-// Author: Adam Joyce
-// Version: 1.04
+////////////////////////////////////////////////////////////////////////////////
+//
+// (C) Andy Thomason 2012-2014
+//
+// Modular Framework for OpenGLES2 rendering on multiple platforms.
+//
+
+#include "l_system_parser.h"
 
 namespace octet {
+  /// Scene containing a box with octet.
   class l_systems : public app {
-    // Scene for drawing.
+
+    // scene for drawing box
     ref<visual_scene> app_scene;
 
   public:
-    /// Constructor.
+    /// this is called when we construct the class before everything is initialised.
     l_systems(int argc, char **argv) : app(argc, argv) {
     }
 
-    /// Destructor.
-    ~l_systems() {
-
-    }
-
-    /// Initiliases our app - called once OpenGL is initliased.
+    /// this is called once OpenGL is initialized
     void app_init() {
-      app_scene = new visual_scene();
+      app_scene =  new visual_scene();
       app_scene->create_default_camera_and_lights();
-      app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, 20 ,0));
+
+      l_system_parser parser;
+      parser.read_data("data.csv");
     }
 
-    /// Draws the world.
+    /// this is called to draw the world
     void draw_world(int x, int y, int w, int h) {
       int vx = 0, vy = 0;
       get_viewport_size(vx, vy);
       app_scene->begin_render(vx, vy);
 
-      // Update matrices - assumes 30 fps.
-      app_scene->update(1.0f / 30);
+      // update matrices. assume 30 fps.
+      app_scene->update(1.0f/30);
 
-      // Draw the scene.
+      // draw the scene
       app_scene->render((float)vx / vy);
     }
   };

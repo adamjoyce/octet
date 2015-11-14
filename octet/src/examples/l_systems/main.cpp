@@ -1,16 +1,19 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
-// (C) Andy Thomason and Adam Joyce 2012-2015
+// (C) Andy Thomason 2012-2014
 //
 // Modular Framework for OpenGLES2 rendering on multiple platforms.
 //
-// L Systems Assignment
+// Text overlay
 //
 
+#define OCTET_BULLET 1
+
 #include "../../octet.h"
+
 #include "l_systems.h"
 
-/// Create a app with octet
+/// Create a box with octet
 int main(int argc, char **argv) {
   // set up the platform.
   octet::app::init_all(argc, argv);
@@ -22,3 +25,5 @@ int main(int argc, char **argv) {
   // open windows
   octet::app::run_all_apps();
 }
+
+

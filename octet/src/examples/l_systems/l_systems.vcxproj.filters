@@ -427,7 +427,8 @@
     <ClInclude Include="..\..\containers\string.h">
       <Filter>containers</Filter>
     </ClInclude>
-    <ClInclude Include="example_box.h" />
+    <ClInclude Include="l_systems.h" />
+    <ClInclude Include="l_system_parser.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\resources\mesh_builder.inl">
