@@ -9,7 +9,7 @@
 namespace octet {
   class l_system_parser : public resource {
 
-    // For the l-system data
+    // For the l-system data.
     dynarray<char> variables;
     dynarray<char> constants;
     dynarray<char> axiom;
@@ -23,7 +23,7 @@ namespace octet {
     }
 
     /// Read the l-system data in from a given CSV file.
-    void read_data(const std::string &file_path) {
+    void read_initial_data(const std::string &file_path) {
 
       // std::string for use with std::getline
       std::string line = "";
@@ -95,7 +95,9 @@ namespace octet {
           break;
 
         char key = value[0];
-        rules[key] = value.substr(3);
+        std::string temp = value.substr(3);
+
+        rules[key] = temp;
       }
 
       // For debugging.
@@ -114,8 +116,42 @@ namespace octet {
 
       printf("\n");
 
-      for (int i = 0; i < variables.size(); ++i)
-        printf(" %c->%s ", variables[i], rules.operator[](variables[i]).c_str());
+      for (int i = 0; i < variables.size(); ++i) {
+        printf(" %c->%s ", variables[i], rules[variables[i]].c_str());
+      }
+     }
+
+    /// Iterate to the next step of the L-System.
+    void next_iteration() {
+      dynarray<char> new_axiom;
+
+      for (int i = 0; i < axiom.size(); ++i) {
+        if (rules.contains(axiom[i])) {
+          std::string temp = rules[axiom[i]];
+
+          for (int j = 0; j < temp.size(); ++j) {
+            new_axiom.push_back(temp[j]);
+          }
+        } else {
+          new_axiom.push_back(axiom[i]);
+        }
+      }
+
+      // Replace the axiom with the new axiom.
+      axiom.resize(new_axiom.size());
+      for (int i = 0; i < axiom.size(); ++i) {
+        axiom[i] = new_axiom[i];
+      }
+
+      // For debugging.
+      for (int i = 0; i < axiom.size(); ++i) {
+        printf("%c", axiom[i]);
+      }
+      printf("\n");
+    }
+
+    dynarray<char> &get_axiom() {
+      return axiom;
     }
   };
 }
