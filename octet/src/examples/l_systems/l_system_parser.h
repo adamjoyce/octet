@@ -14,6 +14,7 @@ namespace octet {
     dynarray<char> constants;
     dynarray<char> axiom;
     hash_map<char, std::string> rules;
+    float angle_variation;
 
   public:
     l_system_parser() {
@@ -100,36 +101,49 @@ namespace octet {
         rules[key] = temp;
       }
 
+      // Angle variation.
+      std::getline(file_stream, line, '\n');
+      std::getline(file_stream, line, '\n');
+
+      line_stream.clear();
+      line_stream.str(line);
+
+      std::getline(line_stream, value, ',');
+
+      angle_variation = atof(value.c_str());
+
       // For debugging.
-      for (int i = 0; i < variables.size(); ++i)
+      /*for (unsigned int i = 0; i < variables.size(); ++i)
         printf(" %c ", variables[i]);
 
       printf("\n");
 
-      for (int i = 0; i < constants.size(); ++i)
+      for (unsigned int i = 0; i < constants.size(); ++i)
         printf(" %c ", constants[i]);
 
       printf("\n");
 
-      for (int i = 0; i < axiom.size(); ++i)
+      for (unsigned int i = 0; i < axiom.size(); ++i)
         printf(" %c ", axiom[i]);
 
       printf("\n");
 
-      for (int i = 0; i < variables.size(); ++i) {
+      for (unsigned int i = 0; i < variables.size(); ++i) {
         printf(" %c->%s ", variables[i], rules[variables[i]].c_str());
       }
+
+      printf(" %f ", angle_variation);*/
      }
 
     /// Iterate to the next step of the L-System.
     void next_iteration() {
       dynarray<char> new_axiom;
 
-      for (int i = 0; i < axiom.size(); ++i) {
+      for (unsigned int i = 0; i < axiom.size(); ++i) {
         if (rules.contains(axiom[i])) {
           std::string temp = rules[axiom[i]];
 
-          for (int j = 0; j < temp.size(); ++j) {
+          for (unsigned int j = 0; j < temp.size(); ++j) {
             new_axiom.push_back(temp[j]);
           }
         } else {
@@ -139,19 +153,23 @@ namespace octet {
 
       // Replace the axiom with the new axiom.
       axiom.resize(new_axiom.size());
-      for (int i = 0; i < axiom.size(); ++i) {
+      for (unsigned int i = 0; i < axiom.size(); ++i) {
         axiom[i] = new_axiom[i];
       }
 
       // For debugging.
-      for (int i = 0; i < axiom.size(); ++i) {
+      /*for (unsigned int i = 0; i < axiom.size(); ++i) {
         printf("%c", axiom[i]);
       }
-      printf("\n");
+      printf("\n");*/
     }
 
     dynarray<char> &get_axiom() {
       return axiom;
+    }
+
+    float &get_angle() {
+      return angle_variation;
     }
   };
 }
