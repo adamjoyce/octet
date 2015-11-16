@@ -15,6 +15,7 @@ namespace octet {
     dynarray<char> axiom;
     hash_map<char, std::string> rules;
     float angle_variation;
+    unsigned int max_iterations;
 
   public:
     l_system_parser() {
@@ -24,7 +25,7 @@ namespace octet {
     }
 
     /// Read the l-system data in from a given CSV file.
-    void read_initial_data(const std::string &file_path) {
+    void read_data(const std::string &file_path) {
 
       // std::string for use with std::getline
       std::string line = "";
@@ -112,6 +113,17 @@ namespace octet {
 
       angle_variation = atof(value.c_str());
 
+      // Maximum iterations.
+      std::getline(file_stream, line, '\n');
+      std::getline(file_stream, line, '\n');
+
+      line_stream.clear();
+      line_stream.str(line);
+
+      std::getline(line_stream, value, ',');
+
+      max_iterations = atof(value.c_str());
+
       // For debugging.
       /*for (unsigned int i = 0; i < variables.size(); ++i)
         printf(" %c ", variables[i]);
@@ -132,7 +144,13 @@ namespace octet {
         printf(" %c->%s ", variables[i], rules[variables[i]].c_str());
       }
 
-      printf(" %f ", angle_variation);*/
+      printf("\n");
+
+      printf(" %f ", angle_variation);
+
+      printf("\n");
+
+      printf(" %i ", max_iterations);*/
      }
 
     /// Iterate to the next step of the L-System.
@@ -158,10 +176,10 @@ namespace octet {
       }
 
       // For debugging.
-      /*for (unsigned int i = 0; i < axiom.size(); ++i) {
+      for (unsigned int i = 0; i < axiom.size(); ++i) {
         printf("%c", axiom[i]);
       }
-      printf("\n");*/
+      printf("\n");
     }
 
     dynarray<char> &get_axiom() {
@@ -170,6 +188,17 @@ namespace octet {
 
     float &get_angle() {
       return angle_variation;
+    }
+
+    unsigned int &get_max_iterations() {
+      return max_iterations;
+    }
+
+    void reset() {
+      variables.reset();
+      constants.reset();
+      axiom.reset();
+      rules.clear();
     }
   };
 }

@@ -42,6 +42,13 @@ namespace octet {
     dynarray<tree_node> stack;
 
     float line_length;
+    float line_width;
+    float line_increments;
+
+    unsigned int far_plane_distance;
+    int camera_y, camera_z, camera_increments;
+
+    unsigned int current_iteration;
 
   public:
     /// this is called when we construct the class before everything is initialised.
@@ -50,22 +57,31 @@ namespace octet {
 
     /// this is called once OpenGL is initialized
     void app_init() {
+      far_plane_distance = 20000;
+      camera_y = 30;
+      camera_z = 50;
+      camera_increments = 10;
+
       app_scene =  new visual_scene();
       app_scene->create_default_camera_and_lights();
-      app_scene->get_camera_instance(0)->set_far_plane(2000);
-      app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, 40, 100));
-
+      app_scene->get_camera_instance(0)->set_far_plane(far_plane_distance);
+      app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, camera_y, camera_z));
 
       line_length = 1.0f;
+      line_width = 0.1f;
+      line_increments = 0.2f;
 
-      tree.read_initial_data("data1.csv");
+      current_iteration = 0;
+
+      tree.read_data("data1.csv");
+
       printf("\n");
       printf("\n");
       printf("\n");
       printf("%c", tree.get_axiom()[0]);
       printf("\n");
 
-      draw_tree();
+      parse_axiom();
     }
 
     /// this is called to draw the world
@@ -79,20 +95,14 @@ namespace octet {
 
       // draw the scene
       app_scene->render((float)w / h);
+    }
 
-      // Control camera.
-      if (is_key_down(key_down))
-        app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, 0, 1));
-      if (is_key_down(key_up))
-        app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, 0, -1));
-      if (is_key_down(key_f1))
-        app_scene->get_camera_instance(0)->get_node()->translate(vec3(-1, 0, 0));
-      if (is_key_down(key_f4))
-        app_scene->get_camera_instance(0)->get_node()->translate(vec3(1, 0, 0));
-      if (is_key_down(key_f2))
-        app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, 1, 0));
-      if (is_key_down(key_f3))
-        app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, -1, 0));
+    void update_scene() {
+      app_scene = new visual_scene();
+      app_scene->create_default_camera_and_lights();
+      app_scene->get_camera_instance(0)->set_far_plane(far_plane_distance);
+      app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, camera_y, camera_z));
+      parse_axiom();
     }
 
     /// Draw a line - position and angle is based on the tree node stack.
@@ -112,7 +122,7 @@ namespace octet {
       mat.translate(mid_point);
       mat.rotate(angle, 0, 0, 1);
 
-      mesh_box *line = new mesh_box(vec3(0.3f, 1.0f, 0.0f), mat);
+      mesh_box *line = new mesh_box(vec3(line_width, line_length, 0.0f), mat);
       scene_node *node = new scene_node();
       app_scene->add_child(node);
       app_scene->add_mesh_instance(new mesh_instance(node, line, color));
@@ -120,7 +130,7 @@ namespace octet {
       return end_point;
     }
 
-    void draw_tree() {
+    void parse_axiom() {
       dynarray<char> axiom = tree.get_axiom();
       float tree_angle = tree.get_angle();
 
@@ -162,14 +172,84 @@ namespace octet {
           }
         }
       }
+      current_iteration++;
     }
 
     void handle_input() {
       if (is_key_down(key_space)) {
-        tree.next_iteration();
-        draw_tree();
-        // NEED TO REFRESH THE SCENE TO STOP MULTIPLE INSTANCES OF LINES.
+        if (current_iteration < tree.get_max_iterations()) {
+          tree.next_iteration();
+          update_scene();
+        } else {
+          // maximum number of iteration reached for that tree
+        }
       }
+
+      // Camera control.
+      if (is_key_down(key_up)) {
+        app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, camera_increments, 0));
+        camera_y += camera_increments;
+      }
+      if (is_key_down(key_down)) {
+        app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, -camera_increments, 0));
+        camera_y -= camera_increments;
+      }
+      if (is_key_down(key_left)) {
+        app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, 0, camera_increments));
+        camera_z += camera_increments;
+      }
+      if (is_key_down(key_right)) {
+        app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, 0, -camera_increments));
+        camera_z -= camera_increments;
+      }
+
+      // Load a different csv file.
+      if (is_key_down(key_f1)) {
+        tree.reset();
+        tree.read_data("data1.csv");
+        current_iteration = 0;
+        update_scene();
+      } else if (is_key_down(key_f2)) {
+        tree.reset();
+        tree.read_data("data2.csv");
+        current_iteration = 0;
+        update_scene();
+      } else if (is_key_down(key_f3)) {
+        tree.reset();
+        tree.read_data("data3.csv");
+        current_iteration = 0;
+        update_scene();
+      } else if (is_key_down(key_f4)) {
+        tree.reset();
+        tree.read_data("data4.csv");
+        current_iteration = 0;
+        update_scene();
+      } else if (is_key_down(key_f5)) {
+        tree.reset();
+        tree.read_data("data5.csv");
+        current_iteration = 0;
+        update_scene();
+      } else if (is_key_down(key_f6)) {
+        tree.reset();
+        tree.read_data("data6.csv");
+        current_iteration = 0;
+        update_scene();
+      }
+
+      // Line dimensions.
+      /*if (is_key_down(key_tab)) {
+        line_length += line_increments;
+      }
+      else if (is_key_down(key_shift)) {
+        line_length -= line_increments;
+      }
+
+      if (is_key_down(key_ctrl)) {
+        line_width += line_increments;
+      }
+      else if (is_key_down(key_alt)) {
+        line_width -= line_increments;
+      }*/
     }
   };
 }
