@@ -37,8 +37,9 @@ namespace octet {
     // scene for drawing box
     ref<visual_scene> app_scene;
 
-    ref<text_overlay> text;
-    ref<mesh_text> information;
+    ref<text_overlay> overlay;
+    ref<mesh_text> l_system_information;
+    ref<mesh_text> control_information;
 
     l_system_parser tree;
 
@@ -53,8 +54,9 @@ namespace octet {
     float angle_increment;
 
     unsigned int far_plane_distance;
-    int camera_y, camera_z, camera_increments;
+    int camera_x, camera_y, camera_z, camera_increments;
 
+    unsigned int current_file;
     unsigned int current_iteration;
 
     material *stem, *leaf, *current_color;
@@ -67,19 +69,38 @@ namespace octet {
     /// this is called once OpenGL is initialized
     void app_init() {
       far_plane_distance = 20000;
+      camera_x = 0;
       camera_y = 240;
       camera_z = 600;
       camera_increments = 10;
 
-      aabb bb(vec3(144.5f, 305.0f, 0.0f), vec3(256, 64, 0));
-      text = new text_overlay();
-      information = new mesh_text(text->get_default_font(), "", &bb);
-      text->add_mesh_text(information);
+      string controls = "Controls:\n"
+        "F1 - F8     = Load Files\n"
+        "SPACE       = Iterate\n"
+        "TEMP\n"
+        "TEMP\n"
+        "TEMP\n"
+        "TEMP\n"
+        "TEMP\n"
+        "TEMP\n"
+        "RIGHT ARROW = +Zoom\n"
+        "LEFT ARROW  = -Zoom\n"
+        "UP ARROW    = Move Up\n"
+        "DOWN ARROW  = Move Down\n";
+
+      // Overlay text.
+      aabb bb0(vec3(-290, 325, 0), vec3(80, 20, 0));
+      aabb bb1(vec3(-270, -350, 0), vec3(100, 240, 0));
+      overlay = new text_overlay();
+      l_system_information = new mesh_text(overlay->get_default_font(), "", &bb0);
+      control_information = new mesh_text(overlay->get_default_font(), controls, &bb1);
+      overlay->add_mesh_text(l_system_information);
+      overlay->add_mesh_text(control_information);
 
       app_scene =  new visual_scene();
       app_scene->create_default_camera_and_lights();
       app_scene->get_camera_instance(0)->set_far_plane(far_plane_distance);
-      app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, camera_y, camera_z));
+      app_scene->get_camera_instance(0)->get_node()->translate(vec3(camera_x, camera_y, camera_z));
 
       line_length = 1.0f;
       line_width = 0.4f;
@@ -90,20 +111,15 @@ namespace octet {
 
       angle_increment = 10.0f;
 
+      current_file = 1;
+      current_iteration = 0;
+
       stem = new material(vec4(0.55f, 0.27f, 0.07f, 1));
       leaf = new material(vec4(0.23f, 0.37f, 0.04f, 1));
       current_color = stem;
 
       tree.read_data("data1.csv");
-
-      printf("\n");
-      printf("\n");
-      printf("\n");
-      printf("%c", tree.get_axiom()[0]);
-      printf("\n");
-
       parse_axiom();
-      current_iteration = 0;
     }
 
     /// this is called to draw the world
@@ -112,15 +128,15 @@ namespace octet {
       get_viewport_size(vx, vy);
       app_scene->begin_render(w, h);
 
-      handle_input();
-
-      update_text(vx, vy);
-
       // update matrices. assume 30 fps.
       app_scene->update(1.0f/30);
 
       // draw the scene
       app_scene->render((float)vx / vy);
+
+      handle_input();
+
+      update_text(vx, vy);
 
       //printf(" %i, %i ", camera_y, camera_z);
     }
@@ -129,7 +145,7 @@ namespace octet {
       app_scene = new visual_scene();
       app_scene->create_default_camera_and_lights();
       app_scene->get_camera_instance(0)->set_far_plane(far_plane_distance);
-      app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, camera_y, camera_z));
+      app_scene->get_camera_instance(0)->get_node()->translate(vec3(camera_x, camera_y, camera_z));
       parse_axiom();
     }
 
@@ -236,25 +252,34 @@ namespace octet {
       if (is_key_down(key_right)) {
         app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, 0, -camera_increments));
         camera_z -= camera_increments;
-      }
+      } 
 
       // Load a different csv file.
       if (is_key_down(key_f1)) {
         switch_tree("data1.csv", 0.4f, 250, 620);
+        current_file = 1;
       } else if (is_key_down(key_f2)) {
         switch_tree("data2.csv", 0.2f, 60, 130);
+        current_file = 2;
       } else if (is_key_down(key_f3)) {
         switch_tree("data3.csv", 0.1f, 60, 120);
+        current_file = 3;
       } else if (is_key_down(key_f4)) {
         switch_tree("data4.csv", 0.4f, 250, 620);
+        current_file = 4;
       } else if (is_key_down(key_f5)) {
         switch_tree("data5.csv", 0.4f, 250, 620);
+        current_file = 5;
       } else if (is_key_down(key_f6)) {
         switch_tree("data6.csv", 0.2f, 80, 180);
+        current_file = 6;
       } else if (is_key_down(key_f7)) {
         switch_tree("data7.csv", 0.1f, 15, 50);
+        current_file = 7;
       } else if (is_key_down(key_f8)) {
-        switch_tree("data8.csv", 0.1f, 15, 50);
+        // Camera coordinate parameters order: y, z, x.
+        switch_tree("data8.csv", 0.1f, 30, 80, -30);
+        current_file = 8;
       }
 
       // Angle variation.
@@ -293,10 +318,12 @@ namespace octet {
     }
 
     /// Switch / reset the current tree.
-    void switch_tree(const std::string &csv_path, const float &line_width_, const int &camera_y_, const int &camera_z_) {
+    void switch_tree(const std::string &csv_path, const float &line_width_, const int &camera_y_, const int &camera_z_,
+                     const int &camera_x_ = 0) {
       tree.reset();
       tree.read_data(csv_path);
       line_width = line_width_;
+      camera_x = camera_x_;
       camera_y = camera_y_;
       camera_z = camera_z_;
       update_scene();
@@ -304,19 +331,23 @@ namespace octet {
     }
 
     ///
-    void update_text(int x, int y)
+    void update_text(int vx, int vy)
     {
-      information->clear();
+      l_system_information->clear();
 
       // Write text.
-      char buffer[1][256];
-      sprintf(buffer[0], "%9d", current_iteration);
+      char buffer[2][256];
+      sprintf(buffer[0], "%d", current_file);
+      sprintf(buffer[1], "%d", current_iteration);
 
-      information->format("Current iteration: %s", buffer[0]);
+      l_system_information->format("Current File: %s\n"
+                          "Current Iteration: %s\n",
+                          buffer[0],
+                          buffer[1]);
 
-      information->update();
+      l_system_information->update();
 
-      text->render(x, y);
+      overlay->render(vx, vy);
     }
   };
 }
