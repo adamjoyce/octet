@@ -11,7 +11,7 @@ namespace octet {
 
     // For the l-system data.
     dynarray<char> variables;
-    dynarray<char> constants;
+    dynarray<char> constants;   // Not used for anything.
     dynarray<char> axiom;
     hash_map<char, std::string> rules;
     float angle_variation;

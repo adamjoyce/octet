@@ -18,7 +18,7 @@ namespace octet {
       angle = 0.0f;
     }
 
-    tree_node(vec3 node_position, float node_angle) {
+    tree_node(vec3 &node_position, float node_angle) {
       position = node_position;
       angle = node_angle;
     }
@@ -50,7 +50,7 @@ namespace octet {
 
     unsigned int current_iteration;
 
-    material *color;
+    material *stem, *leaf, *current_color;
 
   public:
     /// this is called when we construct the class before everything is initialised.
@@ -73,7 +73,9 @@ namespace octet {
       line_width = 0.4f;
       line_increments = 0.2f;
 
-      color = new material(vec4(0, 1, 0, 1));
+      stem = new material(vec4(0.55f, 0.27f, 0.07f, 1));
+      leaf = new material(vec4(0.23f, 0.37f, 0.04f, 1));
+      current_color = stem;
 
       tree.read_data("data1.csv");
 
@@ -94,12 +96,12 @@ namespace octet {
       handle_input();
 
       // update matrices. assume 30 fps.
-      //app_scene->update(1.0f/30);
+      app_scene->update(1.0f/30);
 
       // draw the scene
       app_scene->render((float)w / h);
 
-      printf(" %i, %i ", camera_y, camera_z);
+      //printf(" %i, %i ", camera_y, camera_z);
     }
 
     void update_scene() {
@@ -128,7 +130,7 @@ namespace octet {
       mesh_box *line = new mesh_box(vec3(line_width, line_length, 0.0f), mat);
       scene_node *node = new scene_node();
       app_scene->add_child(node);
-      app_scene->add_mesh_instance(new mesh_instance(node, line, color));
+      app_scene->add_mesh_instance(new mesh_instance(node, line, current_color));
 
       return end_point;
     }
@@ -144,6 +146,17 @@ namespace octet {
       for (unsigned int i = 0; i < axiom.size(); ++i) {
         switch (axiom[i]) {
           case 'F': {
+            // Apply the correct material color
+            current_color = stem;
+            for (unsigned int j = i+1; j < axiom.size(); ++j) {
+              if (axiom[j] == ']') {
+                if (j+1 != axiom.size()) {
+                  current_color = leaf;
+                }
+              } else if (axiom[j] == 'F') {
+                break;
+              }
+            }
             position = draw_line(position, angle);
             break;
           }
@@ -221,6 +234,8 @@ namespace octet {
         switch_tree("data6.csv", 0.2f, 80, 180);
       } else if (is_key_down(key_f7)) {
         switch_tree("data7.csv", 0.1f, 15, 50);
+      } else if (is_key_down(key_f8)) {
+        switch_tree("data8.csv", 0.1f, 15, 50);
       }
 
       // Line dimensions.
