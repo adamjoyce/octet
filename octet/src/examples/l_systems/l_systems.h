@@ -43,7 +43,11 @@ namespace octet {
 
     float line_length;
     float line_width;
-    float line_increments;
+    float line_increment;
+
+    float maximum_angle;
+    float minimum_angle;
+    float angle_increment;
 
     unsigned int far_plane_distance;
     int camera_y, camera_z, camera_increments;
@@ -71,7 +75,12 @@ namespace octet {
 
       line_length = 1.0f;
       line_width = 0.4f;
-      line_increments = 0.2f;
+      line_increment = 0.2f;
+
+      maximum_angle = 100;
+      minimum_angle = 0;
+
+      angle_increment = 10.0f;
 
       stem = new material(vec4(0.55f, 0.27f, 0.07f, 1));
       leaf = new material(vec4(0.23f, 0.37f, 0.04f, 1));
@@ -188,7 +197,6 @@ namespace octet {
           }
         }
       }
-      current_iteration++;
     }
 
     void handle_input() {
@@ -196,8 +204,7 @@ namespace octet {
         if (current_iteration < tree.get_max_iterations()) {
           tree.next_iteration();
           update_scene();
-        } else {
-          // maximum number of iteration reached for that tree
+          current_iteration++;
         }
       }
 
@@ -236,6 +243,25 @@ namespace octet {
         switch_tree("data7.csv", 0.1f, 15, 50);
       } else if (is_key_down(key_f8)) {
         switch_tree("data8.csv", 0.1f, 15, 50);
+      }
+
+      // Angle variation.
+      float angle = tree.get_angle();
+      float new_angle;
+
+      if (is_key_down(key_shift)) {
+        new_angle = angle + angle_increment;
+        if (new_angle < maximum_angle) {
+          tree.set_angle(new_angle);
+          update_scene();
+        }
+      }
+      if (is_key_down(key_ctrl)) {
+        new_angle = angle - angle_increment;
+        if (new_angle > minimum_angle) {
+          tree.set_angle(new_angle);
+          update_scene();
+        }
       }
 
       // Line dimensions.
