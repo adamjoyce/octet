@@ -37,6 +37,9 @@ namespace octet {
     // scene for drawing box
     ref<visual_scene> app_scene;
 
+    ref<text_overlay> text;
+    ref<mesh_text> information;
+
     l_system_parser tree;
 
     dynarray<tree_node> stack;
@@ -67,6 +70,11 @@ namespace octet {
       camera_y = 240;
       camera_z = 600;
       camera_increments = 10;
+
+      aabb bb(vec3(144.5f, 305.0f, 0.0f), vec3(256, 64, 0));
+      text = new text_overlay();
+      information = new mesh_text(text->get_default_font(), "", &bb);
+      text->add_mesh_text(information);
 
       app_scene =  new visual_scene();
       app_scene->create_default_camera_and_lights();
@@ -100,15 +108,19 @@ namespace octet {
 
     /// this is called to draw the world
     void draw_world(int x, int y, int w, int h) {
+      int vx = 0, vy = 0;
+      get_viewport_size(vx, vy);
       app_scene->begin_render(w, h);
 
       handle_input();
+
+      update_text(vx, vy);
 
       // update matrices. assume 30 fps.
       app_scene->update(1.0f/30);
 
       // draw the scene
-      app_scene->render((float)w / h);
+      app_scene->render((float)vx / vy);
 
       //printf(" %i, %i ", camera_y, camera_z);
     }
@@ -289,6 +301,22 @@ namespace octet {
       camera_z = camera_z_;
       update_scene();
       current_iteration = 0;
+    }
+
+    ///
+    void update_text(int x, int y)
+    {
+      information->clear();
+
+      // Write text.
+      char buffer[1][256];
+      sprintf(buffer[0], "%9d", current_iteration);
+
+      information->format("Current iteration: %s", buffer[0]);
+
+      information->update();
+
+      text->render(x, y);
     }
   };
 }
