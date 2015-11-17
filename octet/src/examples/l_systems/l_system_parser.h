@@ -176,10 +176,10 @@ namespace octet {
       }
 
       // For debugging.
-      for (unsigned int i = 0; i < axiom.size(); ++i) {
+      /*for (unsigned int i = 0; i < axiom.size(); ++i) {
         printf("%c", axiom[i]);
       }
-      printf("\n");
+      printf("\n");*/
     }
 
     dynarray<char> &get_axiom() {

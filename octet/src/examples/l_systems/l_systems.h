@@ -50,6 +50,8 @@ namespace octet {
 
     unsigned int current_iteration;
 
+    material *color;
+
   public:
     /// this is called when we construct the class before everything is initialised.
     l_systems(int argc, char **argv) : app(argc, argv) {
@@ -58,8 +60,8 @@ namespace octet {
     /// this is called once OpenGL is initialized
     void app_init() {
       far_plane_distance = 20000;
-      camera_y = 30;
-      camera_z = 50;
+      camera_y = 240;
+      camera_z = 600;
       camera_increments = 10;
 
       app_scene =  new visual_scene();
@@ -68,10 +70,10 @@ namespace octet {
       app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, camera_y, camera_z));
 
       line_length = 1.0f;
-      line_width = 0.1f;
+      line_width = 0.4f;
       line_increments = 0.2f;
 
-      current_iteration = 0;
+      color = new material(vec4(0, 1, 0, 1));
 
       tree.read_data("data1.csv");
 
@@ -82,6 +84,7 @@ namespace octet {
       printf("\n");
 
       parse_axiom();
+      current_iteration = 0;
     }
 
     /// this is called to draw the world
@@ -91,10 +94,12 @@ namespace octet {
       handle_input();
 
       // update matrices. assume 30 fps.
-      app_scene->update(1.0f/30);
+      //app_scene->update(1.0f/30);
 
       // draw the scene
       app_scene->render((float)w / h);
+
+      printf(" %i, %i ", camera_y, camera_z);
     }
 
     void update_scene() {
@@ -107,8 +112,6 @@ namespace octet {
 
     /// Draw a line - position and angle is based on the tree node stack.
     vec3 &draw_line(const vec3 &position, const float angle) {
-      material *color = new material(vec4(0, 1, 0, 1));
-
       vec3 mid_point = position;
       mid_point.x() = mid_point.x() + line_length * cos((angle + 90) * CL_M_PI / 180);
       mid_point.y() = mid_point.y() + line_length * sin((angle + 90) * CL_M_PI / 180);
@@ -205,35 +208,19 @@ namespace octet {
 
       // Load a different csv file.
       if (is_key_down(key_f1)) {
-        tree.reset();
-        tree.read_data("data1.csv");
-        current_iteration = 0;
-        update_scene();
+        switch_tree("data1.csv", 0.4f, 250, 620);
       } else if (is_key_down(key_f2)) {
-        tree.reset();
-        tree.read_data("data2.csv");
-        current_iteration = 0;
-        update_scene();
+        switch_tree("data2.csv", 0.2f, 60, 130);
       } else if (is_key_down(key_f3)) {
-        tree.reset();
-        tree.read_data("data3.csv");
-        current_iteration = 0;
-        update_scene();
+        switch_tree("data3.csv", 0.1f, 60, 120);
       } else if (is_key_down(key_f4)) {
-        tree.reset();
-        tree.read_data("data4.csv");
-        current_iteration = 0;
-        update_scene();
+        switch_tree("data4.csv", 0.4f, 250, 620);
       } else if (is_key_down(key_f5)) {
-        tree.reset();
-        tree.read_data("data5.csv");
-        current_iteration = 0;
-        update_scene();
+        switch_tree("data5.csv", 0.4f, 250, 620);
       } else if (is_key_down(key_f6)) {
-        tree.reset();
-        tree.read_data("data6.csv");
-        current_iteration = 0;
-        update_scene();
+        switch_tree("data6.csv", 0.2f, 80, 180);
+      } else if (is_key_down(key_f7)) {
+        switch_tree("data7.csv", 0.1f, 15, 50);
       }
 
       // Line dimensions.
@@ -250,6 +237,17 @@ namespace octet {
       else if (is_key_down(key_alt)) {
         line_width -= line_increments;
       }*/
+    }
+
+    /// Switch / reset the current tree.
+    void switch_tree(const std::string &csv_path, const float &line_width_, const int &camera_y_, const int &camera_z_) {
+      tree.reset();
+      tree.read_data(csv_path);
+      line_width = line_width_;
+      camera_y = camera_y_;
+      camera_z = camera_z_;
+      update_scene();
+      current_iteration = 0;
     }
   };
 }

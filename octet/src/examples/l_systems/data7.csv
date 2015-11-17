@@ -1,0 +1,12 @@
+variables,,
+A,B,
+constants,,
++,-,F
+axiom,,
+F,A,
+rules,,
+A->A+BF,B->FA-B,
+angle,,
+90,,
+iterations,,
+8,,
