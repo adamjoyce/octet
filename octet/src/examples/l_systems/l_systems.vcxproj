@@ -215,7 +215,7 @@
     <ClInclude Include="..\..\shaders\shader.h" />
     <ClInclude Include="..\..\shaders\shaders.h" />
     <ClInclude Include="..\..\shaders\texture_shader.h" />
-    <ClInclude Include="l_system_parser.h" />
+    <ClInclude Include="l_system_generator.h" />
     <ClInclude Include="l_systems.h" />
   </ItemGroup>
   <ItemGroup>

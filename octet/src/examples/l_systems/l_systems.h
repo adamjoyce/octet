@@ -5,7 +5,7 @@
 // Modular Framework for OpenGLES2 rendering on multiple platforms.
 //
 
-#include "l_system_parser.h"
+#include "l_system_generator.h"
 
 namespace octet {
   class tree_node {
@@ -34,57 +34,83 @@ namespace octet {
 
   class l_systems : public app {
 
-    // scene for drawing box
+    // Scene for drawing.
     ref<visual_scene> app_scene;
 
+    // Reads the csv files.
+    l_system_generator tree;
+
+    // Records node position and angle.
+    dynarray<tree_node> stack;
+
+    // For drawing text.
     ref<text_overlay> overlay;
     ref<mesh_text> l_system_information;
     ref<mesh_text> control_information;
 
-    l_system_parser tree;
+    // Constants.
+    const float LINE_INCREMENT = 0.2f;
+    const float ANGLE_INCREMENT = 10.0f;
+    const int CAMERA_INCREMENTS = 10;
 
-    dynarray<tree_node> stack;
+    const float DEFAULT_LINE_LENGTH = 1.0f;
+    const float DEFAULT_LINE_WIDTH = 0.4f;
 
-    float line_length;
-    float line_width;
-    float line_increment;
+    const float MIN_LINE_LENGTH = LINE_INCREMENT;
+    const float MAX_LINE_LENGTH = 2.0f;
 
-    float maximum_angle;
-    float minimum_angle;
-    float angle_increment;
+    const float MIN_LINE_WIDTH = LINE_INCREMENT;
+    const float MAX_LINE_WIDTH = 1.0f;
 
-    unsigned int far_plane_distance;
-    int camera_x, camera_y, camera_z, camera_increments;
+    const int MIN_ANGLE = 0;
+    const int MAX_ANGLE = 100;
 
+    const int FAR_PLANE = 20000;
+
+    // L-system node lines.
+    float line_length, line_width;
+
+    // Camera coordinates.
+    int camera_x, camera_y, camera_z;
+
+    // The current system's details.
     unsigned int current_file;
     unsigned int current_iteration;
+    float current_angle;
 
+    // Material colors for lines.
     material *stem, *leaf, *current_color;
 
   public:
-    /// this is called when we construct the class before everything is initialised.
+    /// Called when we construct the class before everything is initialised.
     l_systems(int argc, char **argv) : app(argc, argv) {
     }
 
-    /// this is called once OpenGL is initialized
+    /// Called once OpenGL is initialized
     void app_init() {
-      far_plane_distance = 20000;
       camera_x = 0;
-      camera_y = 240;
-      camera_z = 600;
-      camera_increments = 10;
+      camera_y = 250;
+      camera_z = 620;
 
+      app_scene = new visual_scene();
+      app_scene->create_default_camera_and_lights();
+      app_scene->get_camera_instance(0)->set_far_plane(FAR_PLANE);
+      app_scene->get_camera_instance(0)->get_node()->translate(vec3(camera_x, camera_y, camera_z));
+
+      tree.read_data("data1.csv");
+
+      // For overlay display.
       string controls = "Controls:\n"
         "Load Files      = F1 - F8\n"
         "+/- Iterate     = SPACE/BCKSPACE\n"
-        "+/- Angle       = F9/F10\n"
-        "+/- Line Width  = F11/F12\n"
-        "+/- Line Length = INS/DEL\n"
+        "+/- Angle       = TAB/CTRL\n"
+        "+/- Line Width  = INS/DEL\n"
+        "+/- Line Length = ESC/ALT\n"
         "+/- Zoom        = RIGHT/LEFT ARROW\n"
         "Move Up/Down    = UP/DOWN ARROW\n";
 
       // Overlay text.
-      aabb bb0(vec3(-290, 325, 0), vec3(80, 20, 0));
+      aabb bb0(vec3(-250, 290, 0), vec3(120, 50, 0));
       aabb bb1(vec3(-220, -270, 0), vec3(150, 80, 0));
       overlay = new text_overlay();
       l_system_information = new mesh_text(overlay->get_default_font(), "", &bb0);
@@ -92,56 +118,102 @@ namespace octet {
       overlay->add_mesh_text(l_system_information);
       overlay->add_mesh_text(control_information);
 
-      app_scene = new visual_scene();
-      app_scene->create_default_camera_and_lights();
-      app_scene->get_camera_instance(0)->set_far_plane(far_plane_distance);
-      app_scene->get_camera_instance(0)->get_node()->translate(vec3(camera_x, camera_y, camera_z));
-
-      line_length = 1.0f;
-      line_width = 0.4f;
-      line_increment = 0.2f;
-
-      maximum_angle = 100;
-      minimum_angle = 0;
-
-      angle_increment = 10.0f;
+      line_length = DEFAULT_LINE_LENGTH;
+      line_width = DEFAULT_LINE_WIDTH;
 
       current_file = 1;
       current_iteration = 0;
+      current_angle = tree.get_angle();
 
       stem = new material(vec4(0.55f, 0.27f, 0.07f, 1));
       leaf = new material(vec4(0.23f, 0.37f, 0.04f, 1));
       current_color = stem;
 
-      tree.read_data("data1.csv");
+      // Evaluate the initial axiom.
       parse_axiom();
     }
 
-    /// this is called to draw the world
+    /// Called to draw the world.
     void draw_world(int x, int y, int w, int h) {
+
       int vx = 0, vy = 0;
+
       get_viewport_size(vx, vy);
-      app_scene->begin_render(w, h);
+      app_scene->begin_render(vx, vy);
 
-      // update matrices. assume 30 fps.
-      //app_scene->update(1.0f/30);
+      // Update matrices - assuming 30 fps.
+      app_scene->update(1.0f/30);
 
-      // draw the scene
+      // Draw the scene.
       app_scene->render((float)vx / vy);
 
       handle_input();
 
       update_text(vx, vy);
-
-      //printf(" %i, %i ", camera_y, camera_z);
     }
 
-    void update_scene() {
-      app_scene = new visual_scene();
-      app_scene->create_default_camera_and_lights();
-      app_scene->get_camera_instance(0)->set_far_plane(far_plane_distance);
-      app_scene->get_camera_instance(0)->get_node()->translate(vec3(camera_x, camera_y, camera_z));
-      parse_axiom();
+  private:
+    /// Interpret the current axiom of the l-system model and update the scene.
+    void parse_axiom() {
+      dynarray<char> axiom = tree.get_axiom();
+
+      vec3 position = vec3(0, 0, 0);
+      float angle = 0.0f;
+
+      // Interpret each command in the axiom.
+      for (unsigned int i = 0; i < axiom.size(); ++i) {
+        switch (axiom[i]) {
+          // Draw a line.
+          case 'F': {
+            current_color = stem;
+
+            // Apply the correct material color.
+            for (unsigned int j = i + 1; j < axiom.size(); ++j) {
+              if (axiom[j] == ']') {
+                if (j + 1 != axiom.size()) {
+                  current_color = leaf;
+                }
+              }
+              else if (axiom[j] == 'F') {
+                break;
+              }
+            }
+
+            position = draw_line(position, angle);
+            break;
+          }
+          // Turn left by angle.
+          case '+': {
+            angle += current_angle;
+            break;
+          }
+          // Turn right by angle.
+          case '-': {
+            angle -= current_angle;
+            break;
+          }
+          // Push angle and position on the node stack.
+          case '[': {
+            tree_node node = tree_node(position, angle);
+            stack.push_back(node);
+            break;
+          }
+          // Pop angle and position from the node stack.
+          case ']': {
+            tree_node node = stack[stack.size() - 1];
+            stack.pop_back();
+
+            position = node.get_position();
+            angle = node.get_angle();
+
+            break;
+          }
+          // Skip unevaluated progression values.
+          default: {
+            continue;
+          }
+        }
+      }
     }
 
     /// Draw a line - position and angle is based on the tree node stack.
@@ -167,64 +239,23 @@ namespace octet {
       return end_point;
     }
 
-    void parse_axiom() {
-      dynarray<char> axiom = tree.get_axiom();
-      float tree_angle = tree.get_angle();
+    /// Detect inputs for a number of actions on the l-system.
+    void handle_input() {
+      iterate();
 
-      vec3 position = vec3(0, 0, 0);
-      float angle = 0.0f;
+      camera_controls();
 
-      // Interpret each command in the axiom.
-      for (unsigned int i = 0; i < axiom.size(); ++i) {
-        switch (axiom[i]) {
-          case 'F': {
-            // Apply the correct material color
-            current_color = stem;
-            for (unsigned int j = i+1; j < axiom.size(); ++j) {
-              if (axiom[j] == ']') {
-                if (j+1 != axiom.size()) {
-                  current_color = leaf;
-                }
-              } else if (axiom[j] == 'F') {
-                break;
-              }
-            }
-            position = draw_line(position, angle);
-            break;
-          }
-          case '+': {
-            angle += tree_angle;
-            break;
-          }
-          case '-': {
-            angle -= tree_angle;
-            break;
-          }
-          case '[': {
-            tree_node node = tree_node(position, angle);
-            stack.push_back(node);
-            break;
-          }
-          case ']': {
-            tree_node node = stack[stack.size() - 1];
-            stack.pop_back();
+      load_csv_file();
 
-            position = node.get_position();
-            angle = node.get_angle();
+      vary_angle();
 
-            break;
-          }
-          default: {
-            // Skip unevaluated progression values.
-            continue;
-          }
-        }
-      }
+      vary_line_width();
+
+      vary_line_length();
     }
 
-    void handle_input() {
-
-      // Iterations.
+    /// Detects input to iterate the l-system model.
+    void iterate() {
       if (is_key_going_down(key_space)) {
         if (current_iteration < tree.get_max_iterations()) {
           tree.next_iteration();
@@ -232,139 +263,194 @@ namespace octet {
           current_iteration++;
         }
       }
-
-      if (is_key_going_down(key_backspace)) {
+      else if (is_key_going_down(key_backspace)) {
         if (current_iteration > 0) {
           tree.previous_iteration();
           update_scene();
           current_iteration--;
         }
       }
+    }
 
-      // Camera control.
+    /// Detects input for controlling the camera.
+    void camera_controls() {
       if (is_key_down(key_up)) {
-        app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, camera_increments, 0));
-        camera_y += camera_increments;
+        app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, CAMERA_INCREMENTS, 0));
+        camera_y += CAMERA_INCREMENTS;
       }
 
       if (is_key_down(key_down)) {
-        app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, -camera_increments, 0));
-        camera_y -= camera_increments;
+        app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, -CAMERA_INCREMENTS, 0));
+        camera_y -= CAMERA_INCREMENTS;
       }
 
       if (is_key_down(key_left)) {
-        app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, 0, camera_increments));
-        camera_z += camera_increments;
+        app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, 0, CAMERA_INCREMENTS));
+        camera_z += CAMERA_INCREMENTS;
       }
 
       if (is_key_down(key_right)) {
-        app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, 0, -camera_increments));
-        camera_z -= camera_increments;
-      } 
+        app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, 0, -CAMERA_INCREMENTS));
+        camera_z -= CAMERA_INCREMENTS;
+      }
+    }
 
-      // Load a different csv file.
+    /// Detects input for loading another csv file.
+    void load_csv_file() {
       if (is_key_going_down(key_f1)) {
         switch_tree("data1.csv", 0.4f, 250, 620);
         current_file = 1;
-      } 
-      if (is_key_going_down(key_f2)) {
+      }
+      else if (is_key_going_down(key_f2)) {
         switch_tree("data2.csv", 0.2f, 60, 130);
         current_file = 2;
-      } 
-      if (is_key_going_down(key_f3)) {
+      }
+      else if (is_key_going_down(key_f3)) {
         switch_tree("data3.csv", 0.1f, 60, 120);
         current_file = 3;
-      } 
-      if (is_key_going_down(key_f4)) {
+      }
+      else if (is_key_going_down(key_f4)) {
         switch_tree("data4.csv", 0.4f, 250, 620);
         current_file = 4;
-      } 
-      if (is_key_going_down(key_f5)) {
+      }
+      else if (is_key_going_down(key_f5)) {
         switch_tree("data5.csv", 0.4f, 250, 620);
         current_file = 5;
-      } 
-      if (is_key_going_down(key_f6)) {
+      }
+      else if (is_key_going_down(key_f6)) {
         switch_tree("data6.csv", 0.2f, 80, 180);
         current_file = 6;
-      } 
-      if (is_key_going_down(key_f7)) {
+      }
+      else if (is_key_going_down(key_f7)) {
         switch_tree("data7.csv", 0.1f, 15, 50);
         current_file = 7;
-      } 
-      if (is_key_going_down(key_f8)) {
+      }
+      else if (is_key_going_down(key_f8)) {
         // Camera coordinate parameters order: y, z, x.
         switch_tree("data8.csv", 0.1f, 30, 80, -30);
         current_file = 8;
       }
+    }
 
-      // Angle variation.
-      float angle = tree.get_angle();
+    /// Detects input for varying the angle of the l-system model.
+    void vary_angle() {
       float new_angle;
 
-      if (is_key_going_down(key_f9)) {
-        new_angle = angle + angle_increment;
-        if (new_angle <= maximum_angle) {
-          tree.set_angle(new_angle);
+      if (is_key_going_down(key_tab)) {
+        new_angle = current_angle + ANGLE_INCREMENT;
+
+        if (new_angle <= MAX_ANGLE) {
+          current_angle = new_angle;
           update_scene();
         }
-      }
+      } else if (is_key_going_down(key_ctrl)) {
+        new_angle = current_angle - ANGLE_INCREMENT;
 
-      if (is_key_going_down(key_f10)) {
-        new_angle = angle - angle_increment;
-        if (new_angle >= minimum_angle) {
-          tree.set_angle(new_angle);
+        if (new_angle >= MIN_ANGLE) {
+          current_angle = new_angle;
           update_scene();
         }
-      }
-
-      // Line dimensions.
-      if (is_key_going_down(key_f11)) {
-        line_length += line_increment;
-      }
-      if (is_key_going_down(key_f12)) {
-        line_length -= line_increment;
-      }
-
-      if (is_key_going_down(key_insert)) {
-        line_width += line_increment;
-        update_scene();
-      }
-      if (is_key_going_down(key_delete)) {
-        line_width -= line_increment;
-        update_scene();
       }
     }
+
+    /// Detects input for varying the line width of the l-system model.
+    void vary_line_width() {
+      float new_width;
+
+      if (is_key_going_down(key_insert)) {
+        new_width = line_width + LINE_INCREMENT;
+
+        if (new_width <= MAX_LINE_WIDTH) {
+          line_width = new_width;
+          update_scene();
+        }
+      } else if (is_key_going_down(key_delete)) {
+        new_width = line_width - LINE_INCREMENT;
+
+        if (new_width >= MIN_LINE_WIDTH) {
+          line_width = new_width;
+          update_scene();
+        }
+      }
+    }
+
+    /// Detects input for varying the line length of the l-system model.
+    void vary_line_length() {
+      float new_length;
+
+      if (is_key_going_down(key_f9)) {
+        new_length = line_length + LINE_INCREMENT;
+
+        if (new_length <= MAX_LINE_LENGTH) {
+          line_length = new_length;
+          update_scene();
+        }
+      } else if (is_key_going_down(key_esc)) {
+        new_length = line_length - LINE_INCREMENT;
+
+        if (new_length >= MIN_LINE_LENGTH) {
+          line_length = new_length;
+          update_scene();
+        }
+      }
+    }
+
+    /// Called to refresh the scene with the altered l-system model.
+    void update_scene() {
+      app_scene = new visual_scene();
+      app_scene->create_default_camera_and_lights();
+      app_scene->get_camera_instance(0)->set_far_plane(FAR_PLANE);
+      app_scene->get_camera_instance(0)->get_node()->translate(vec3(camera_x, camera_y, camera_z));
+
+      parse_axiom();
+    }    
 
     /// Switch / reset the current tree.
     void switch_tree(const std::string &csv_path, const float &line_width_, const int &camera_y_, const int &camera_z_,
                      const int &camera_x_ = 0) {
       tree.reset();
       tree.read_data(csv_path);
+
       line_width = line_width_;
       camera_x = camera_x_;
       camera_y = camera_y_;
       camera_z = camera_z_;
+
       update_scene();
+
       current_iteration = 0;
+      current_angle = tree.get_angle();
     }
 
-    ///
+    /// Update the l-system information on the text overlay.
     void update_text(int vx, int vy)
     {
       l_system_information->clear();
 
       // Write text.
-      char buffer[2][256];
+      char buffer[5][256];
       sprintf(buffer[0], "%d", current_file);
       sprintf(buffer[1], "%d", current_iteration);
+      sprintf(buffer[2], "%.2f", current_angle);
+      sprintf(buffer[3], "%.2f", line_width);
+      sprintf(buffer[4], "%.2f", line_length);
 
-      l_system_information->format("Current File: %s\n"
-                          "Current Iteration: %s\n",
-                          buffer[0],
-                          buffer[1]);
+      // Format the mesh.
+      l_system_information->format("Current File:          %s\n"
+                                   "Current Iteration:     %s\n"
+                                   "Current Angle:         %s\n"
+                                   "Current Line Width:    %s\n"
+                                   "Current Line Length:   %s\n",
+                                   buffer[0],
+                                   buffer[1],
+                                   buffer[2],
+                                   buffer[3],
+                                   buffer[4]);
 
+      // Update the OpenGL geometry.
       l_system_information->update();
 
+      // Render the overlay.
       overlay->render(vx, vy);
     }
   };

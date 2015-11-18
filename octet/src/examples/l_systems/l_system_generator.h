@@ -1,33 +1,39 @@
-// A simple CSV parser to read in the l-systems information.
+// A L-system generator.
+//
+// This class is capable of reading in a number of l-system parameters form a csv file.
+// It is also designed to generator the l-system string at each iterative stage.
+//
 // Author: Adam Joyce
-// Version: 1.02
+// Version: 1.04
 
 #include <fstream>      // for std::ifstream
 #include <string>       // for std::getline()
 #include <sstream>      // for std::stringstream
 
 namespace octet {
-  class l_system_parser : public resource {
+  class l_system_generator : public resource {
 
-    // For the l-system data.
+    // For the l-system data. 
+    // Exculded constants as they are determined in l_systems.h.
     dynarray<char> variables;
-    dynarray<char> constants;   // Not used for anything.
     dynarray<char> axiom;
     dynarray<std::string> previous_axioms;
+
+    // Mapping for rules.
     hash_map<char, std::string> rules;
+
     float angle_variation;
     unsigned int max_iterations;
 
   public:
-    l_system_parser() {
+    l_system_generator() {
     }
 
-    ~l_system_parser() {
+    ~l_system_generator() {
     }
 
     /// Read the l-system data in from a given CSV file.
     void read_data(const std::string &file_path) {
-
       // std::string for use with std::getline
       std::string line = "";
       std::string value = "";
@@ -50,22 +56,6 @@ namespace octet {
           break;
 
         variables.push_back(value[0]);
-      }
-
-      // Constants.
-      std::getline(file_stream, line, '\n');
-      std::getline(file_stream, line, '\n');
-
-      line_stream.clear();
-      line_stream.str(line);
-
-      while (line_stream.good()) {
-        std::getline(line_stream, value, ',');
-
-        if (value == "")
-          break;
-
-        constants.push_back(value[0]);
       }
 
       // Axiom.
@@ -125,34 +115,6 @@ namespace octet {
       std::getline(line_stream, value, ',');
 
       max_iterations = atof(value.c_str());
-
-      // For debugging.
-      /*for (unsigned int i = 0; i < variables.size(); ++i)
-        printf(" %c ", variables[i]);
-
-      printf("\n");
-
-      for (unsigned int i = 0; i < constants.size(); ++i)
-        printf(" %c ", constants[i]);
-
-      printf("\n");
-
-      for (unsigned int i = 0; i < axiom.size(); ++i)
-        printf(" %c ", axiom[i]);
-
-      printf("\n");
-
-      for (unsigned int i = 0; i < variables.size(); ++i) {
-        printf(" %c->%s ", variables[i], rules[variables[i]].c_str());
-      }
-
-      printf("\n");
-
-      printf(" %f ", angle_variation);
-
-      printf("\n");
-
-      printf(" %i ", max_iterations);*/
      }
 
     /// Iterate to the next step of the L-System.
@@ -178,7 +140,7 @@ namespace octet {
       }
       previous_axioms.push_back(temp_axiom);
 
-      // Replace the axiom with the new axiom.
+      // Replace the old axiom with the new axiom.
       axiom.resize(new_axiom.size());
       for (unsigned int i = 0; i < axiom.size(); ++i) {
         axiom[i] = new_axiom[i];
@@ -194,10 +156,13 @@ namespace octet {
     /// Iterate to the previous step of the L-System.
     void previous_iteration() {
       std::string new_axiom = previous_axioms.back();
+
       axiom.resize(new_axiom.size());
+
       for (unsigned int i = 0; i < axiom.size(); ++i) {
         axiom[i] = new_axiom[i];
       }
+
       previous_axioms.pop_back();
     }
 
@@ -219,7 +184,6 @@ namespace octet {
 
     void reset() {
       variables.reset();
-      constants.reset();
       axiom.reset();
       rules.clear();
     }
