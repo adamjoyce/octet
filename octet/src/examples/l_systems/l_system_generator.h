@@ -19,6 +19,7 @@ namespace octet {
     dynarray<char> axiom;
     dynarray<std::string> previous_axioms;
 
+
     // Mapping for rules.
     hash_map<char, std::string> rules;
 

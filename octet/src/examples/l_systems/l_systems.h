@@ -105,7 +105,7 @@ namespace octet {
         "+/- Iterate     = SPACE/BCKSPACE\n"
         "+/- Angle       = TAB/CTRL\n"
         "+/- Line Width  = INS/DEL\n"
-        "+/- Line Length = ESC/ALT\n"
+        "+/- Line Length = F9/ESC\n"
         "+/- Zoom        = RIGHT/LEFT ARROW\n"
         "Move Up/Down    = UP/DOWN ARROW\n";
 
@@ -170,9 +170,7 @@ namespace octet {
             // Apply the correct material color.
             for (unsigned int j = i + 1; j < axiom.size(); ++j) {
               if (axiom[j] == ']') {
-                if (j + 1 != axiom.size()) {
-                  current_color = leaf;
-                }
+                current_color = leaf;
               }
               else if (axiom[j] == 'F') {
                 break;
