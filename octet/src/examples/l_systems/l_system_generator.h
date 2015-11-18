@@ -178,10 +178,6 @@ namespace octet {
       return max_iterations;
     }
 
-    void set_angle(float &angle) {
-      angle_variation = angle;
-    }
-
     void reset() {
       variables.reset();
       axiom.reset();

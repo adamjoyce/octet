@@ -216,7 +216,7 @@ namespace octet {
       }
     }
 
-    /// Draw a line - position and angle is based on the tree node stack.
+    /// Draw a line given the node position and angle.
     vec3 &draw_line(const vec3 &position, const float angle) {
       vec3 mid_point = position;
       mid_point.x() = mid_point.x() + line_length * cos((angle + 90) * CL_M_PI / 180);
