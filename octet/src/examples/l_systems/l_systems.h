@@ -124,7 +124,7 @@ namespace octet {
       app_scene->begin_render(w, h);
 
       // update matrices. assume 30 fps.
-      app_scene->update(1.0f/30);
+      //app_scene->update(1.0f/30);
 
       // draw the scene
       app_scene->render((float)vx / vy);
@@ -225,7 +225,7 @@ namespace octet {
     void handle_input() {
 
       // Iterations.
-      if (is_key_down(key_space)) {
+      if (is_key_going_down(key_space)) {
         if (current_iteration < tree.get_max_iterations()) {
           tree.next_iteration();
           update_scene();
@@ -233,7 +233,7 @@ namespace octet {
         }
       }
 
-      if (is_key_down(key_backspace)) {
+      if (is_key_going_down(key_backspace)) {
         if (current_iteration > 0) {
           tree.previous_iteration();
           update_scene();
@@ -263,35 +263,35 @@ namespace octet {
       } 
 
       // Load a different csv file.
-      if (is_key_down(key_f1)) {
+      if (is_key_going_down(key_f1)) {
         switch_tree("data1.csv", 0.4f, 250, 620);
         current_file = 1;
       } 
-      if (is_key_down(key_f2)) {
+      if (is_key_going_down(key_f2)) {
         switch_tree("data2.csv", 0.2f, 60, 130);
         current_file = 2;
       } 
-      if (is_key_down(key_f3)) {
+      if (is_key_going_down(key_f3)) {
         switch_tree("data3.csv", 0.1f, 60, 120);
         current_file = 3;
       } 
-      if (is_key_down(key_f4)) {
+      if (is_key_going_down(key_f4)) {
         switch_tree("data4.csv", 0.4f, 250, 620);
         current_file = 4;
       } 
-      if (is_key_down(key_f5)) {
+      if (is_key_going_down(key_f5)) {
         switch_tree("data5.csv", 0.4f, 250, 620);
         current_file = 5;
       } 
-      if (is_key_down(key_f6)) {
+      if (is_key_going_down(key_f6)) {
         switch_tree("data6.csv", 0.2f, 80, 180);
         current_file = 6;
       } 
-      if (is_key_down(key_f7)) {
+      if (is_key_going_down(key_f7)) {
         switch_tree("data7.csv", 0.1f, 15, 50);
         current_file = 7;
       } 
-      if (is_key_down(key_f8)) {
+      if (is_key_going_down(key_f8)) {
         // Camera coordinate parameters order: y, z, x.
         switch_tree("data8.csv", 0.1f, 30, 80, -30);
         current_file = 8;
@@ -301,35 +301,35 @@ namespace octet {
       float angle = tree.get_angle();
       float new_angle;
 
-      if (is_key_down(key_f9)) {
+      if (is_key_going_down(key_f9)) {
         new_angle = angle + angle_increment;
-        //if (new_angle < maximum_angle) {
+        if (new_angle <= maximum_angle) {
           tree.set_angle(new_angle);
           update_scene();
-        //}
+        }
       }
 
-      if (is_key_down(key_f10)) {
+      if (is_key_going_down(key_f10)) {
         new_angle = angle - angle_increment;
-        //if (new_angle > minimum_angle) {
+        if (new_angle >= minimum_angle) {
           tree.set_angle(new_angle);
           update_scene();
-        //}
+        }
       }
 
       // Line dimensions.
-      if (is_key_down(key_insert)) {
+      if (is_key_going_down(key_f11)) {
         line_length += line_increment;
       }
-      else if (is_key_down(key_delete)) {
+      if (is_key_going_down(key_f12)) {
         line_length -= line_increment;
       }
 
-      if (is_key_down(key_ctrl)) {
+      if (is_key_going_down(key_insert)) {
         line_width += line_increment;
         update_scene();
       }
-      else if (is_key_down(key_alt)) {
+      if (is_key_going_down(key_delete)) {
         line_width -= line_increment;
         update_scene();
       }
