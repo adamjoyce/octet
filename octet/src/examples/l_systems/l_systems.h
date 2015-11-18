@@ -75,29 +75,24 @@ namespace octet {
       camera_increments = 10;
 
       string controls = "Controls:\n"
-        "F1 - F8     = Load Files\n"
-        "SPACE       = Iterate\n"
-        "TEMP\n"
-        "TEMP\n"
-        "TEMP\n"
-        "TEMP\n"
-        "TEMP\n"
-        "TEMP\n"
-        "RIGHT ARROW = +Zoom\n"
-        "LEFT ARROW  = -Zoom\n"
-        "UP ARROW    = Move Up\n"
-        "DOWN ARROW  = Move Down\n";
+        "Load Files      = F1 - F8\n"
+        "+/- Iterate     = SPACE/BCKSPACE\n"
+        "+/- Angle       = F9/F10\n"
+        "+/- Line Width  = F11/F12\n"
+        "+/- Line Length = INS/DEL\n"
+        "+/- Zoom        = RIGHT/LEFT ARROW\n"
+        "Move Up/Down    = UP/DOWN ARROW\n";
 
       // Overlay text.
       aabb bb0(vec3(-290, 325, 0), vec3(80, 20, 0));
-      aabb bb1(vec3(-270, -350, 0), vec3(100, 240, 0));
+      aabb bb1(vec3(-220, -270, 0), vec3(150, 80, 0));
       overlay = new text_overlay();
       l_system_information = new mesh_text(overlay->get_default_font(), "", &bb0);
       control_information = new mesh_text(overlay->get_default_font(), controls, &bb1);
       overlay->add_mesh_text(l_system_information);
       overlay->add_mesh_text(control_information);
 
-      app_scene =  new visual_scene();
+      app_scene = new visual_scene();
       app_scene->create_default_camera_and_lights();
       app_scene->get_camera_instance(0)->set_far_plane(far_plane_distance);
       app_scene->get_camera_instance(0)->get_node()->translate(vec3(camera_x, camera_y, camera_z));
@@ -228,6 +223,8 @@ namespace octet {
     }
 
     void handle_input() {
+
+      // Iterations.
       if (is_key_down(key_space)) {
         if (current_iteration < tree.get_max_iterations()) {
           tree.next_iteration();
@@ -236,19 +233,30 @@ namespace octet {
         }
       }
 
+      if (is_key_down(key_backspace)) {
+        if (current_iteration > 0) {
+          tree.previous_iteration();
+          update_scene();
+          current_iteration--;
+        }
+      }
+
       // Camera control.
       if (is_key_down(key_up)) {
         app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, camera_increments, 0));
         camera_y += camera_increments;
       }
+
       if (is_key_down(key_down)) {
         app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, -camera_increments, 0));
         camera_y -= camera_increments;
       }
+
       if (is_key_down(key_left)) {
         app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, 0, camera_increments));
         camera_z += camera_increments;
       }
+
       if (is_key_down(key_right)) {
         app_scene->get_camera_instance(0)->get_node()->translate(vec3(0, 0, -camera_increments));
         camera_z -= camera_increments;
@@ -258,25 +266,32 @@ namespace octet {
       if (is_key_down(key_f1)) {
         switch_tree("data1.csv", 0.4f, 250, 620);
         current_file = 1;
-      } else if (is_key_down(key_f2)) {
+      } 
+      if (is_key_down(key_f2)) {
         switch_tree("data2.csv", 0.2f, 60, 130);
         current_file = 2;
-      } else if (is_key_down(key_f3)) {
+      } 
+      if (is_key_down(key_f3)) {
         switch_tree("data3.csv", 0.1f, 60, 120);
         current_file = 3;
-      } else if (is_key_down(key_f4)) {
+      } 
+      if (is_key_down(key_f4)) {
         switch_tree("data4.csv", 0.4f, 250, 620);
         current_file = 4;
-      } else if (is_key_down(key_f5)) {
+      } 
+      if (is_key_down(key_f5)) {
         switch_tree("data5.csv", 0.4f, 250, 620);
         current_file = 5;
-      } else if (is_key_down(key_f6)) {
+      } 
+      if (is_key_down(key_f6)) {
         switch_tree("data6.csv", 0.2f, 80, 180);
         current_file = 6;
-      } else if (is_key_down(key_f7)) {
+      } 
+      if (is_key_down(key_f7)) {
         switch_tree("data7.csv", 0.1f, 15, 50);
         current_file = 7;
-      } else if (is_key_down(key_f8)) {
+      } 
+      if (is_key_down(key_f8)) {
         // Camera coordinate parameters order: y, z, x.
         switch_tree("data8.csv", 0.1f, 30, 80, -30);
         current_file = 8;
@@ -286,35 +301,38 @@ namespace octet {
       float angle = tree.get_angle();
       float new_angle;
 
-      if (is_key_down(key_shift)) {
+      if (is_key_down(key_f9)) {
         new_angle = angle + angle_increment;
-        if (new_angle < maximum_angle) {
+        //if (new_angle < maximum_angle) {
           tree.set_angle(new_angle);
           update_scene();
-        }
+        //}
       }
-      if (is_key_down(key_ctrl)) {
+
+      if (is_key_down(key_f10)) {
         new_angle = angle - angle_increment;
-        if (new_angle > minimum_angle) {
+        //if (new_angle > minimum_angle) {
           tree.set_angle(new_angle);
           update_scene();
-        }
+        //}
       }
 
       // Line dimensions.
-      /*if (is_key_down(key_tab)) {
-        line_length += line_increments;
+      if (is_key_down(key_insert)) {
+        line_length += line_increment;
       }
-      else if (is_key_down(key_shift)) {
-        line_length -= line_increments;
+      else if (is_key_down(key_delete)) {
+        line_length -= line_increment;
       }
 
       if (is_key_down(key_ctrl)) {
-        line_width += line_increments;
+        line_width += line_increment;
+        update_scene();
       }
       else if (is_key_down(key_alt)) {
-        line_width -= line_increments;
-      }*/
+        line_width -= line_increment;
+        update_scene();
+      }
     }
 
     /// Switch / reset the current tree.

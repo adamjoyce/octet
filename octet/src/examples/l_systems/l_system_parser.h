@@ -13,6 +13,7 @@ namespace octet {
     dynarray<char> variables;
     dynarray<char> constants;   // Not used for anything.
     dynarray<char> axiom;
+    dynarray<std::string> previous_axioms;
     hash_map<char, std::string> rules;
     float angle_variation;
     unsigned int max_iterations;
@@ -81,6 +82,7 @@ namespace octet {
           break;
 
         axiom.push_back(value[0]);
+        previous_axioms.push_back(value);
       }
 
       // Rules.
@@ -168,6 +170,13 @@ namespace octet {
           new_axiom.push_back(axiom[i]);
         }
       }
+      
+      // Store current axiom for reverse iteration.
+      std::string temp_axiom = "";
+      for (unsigned int i = 0; i < axiom.size(); ++i) {
+        temp_axiom += axiom[i];
+      }
+      previous_axioms.push_back(temp_axiom);
 
       // Replace the axiom with the new axiom.
       axiom.resize(new_axiom.size());
@@ -180,6 +189,16 @@ namespace octet {
         printf("%c", axiom[i]);
       }
       printf("\n");*/
+    }
+
+    /// Iterate to the previous step of the L-System.
+    void previous_iteration() {
+      std::string new_axiom = previous_axioms.back();
+      axiom.resize(new_axiom.size());
+      for (unsigned int i = 0; i < axiom.size(); ++i) {
+        axiom[i] = new_axiom[i];
+      }
+      previous_axioms.pop_back();
     }
 
     dynarray<char> &get_axiom() {
