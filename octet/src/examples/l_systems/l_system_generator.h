@@ -1,7 +1,7 @@
 // A L-system generator.
 //
-// This class is capable of reading in a number of l-system parameters form a csv file.
-// It is also designed to generator the l-system string at each iterative stage.
+// This class is capable of reading in a number of l-system parameters from a csv file.
+// It is also designed to generate the l-system axiom string at each iterative stage.
 //
 // Author: Adam Joyce
 // Version: 1.04

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
-// (C) Andy Thomason 2012-2014
+// (C) Andy Thomason and Adam Joyce 2012-2015
 //
 // Modular Framework for OpenGLES2 rendering on multiple platforms.
 //
@@ -86,7 +86,7 @@ namespace octet {
     l_systems(int argc, char **argv) : app(argc, argv) {
     }
 
-    /// Called once OpenGL is initialized
+    /// Called once OpenGL is initialized.
     void app_init() {
       camera_x = 0;
       camera_y = 250;
