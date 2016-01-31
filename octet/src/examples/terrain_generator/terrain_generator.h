@@ -18,12 +18,14 @@ namespace octet {
     void app_init() {
       app_scene =  new visual_scene();
       app_scene->create_default_camera_and_lights();
+      app_scene->get_camera_instance(0)->get_node()->translate(vec3(grid_width * 0.5, grid_height * 0.5, 0));
+      //app_scene->get_camera_instance(0)->get_node()->rotate(90, vec3(0, 1, 0));
 
-      material *red = new material(vec4(1, 0, 0, 1));
-      mesh_box *box = new mesh_box(vec3(4));
+      /*material *red = new material(vec4(1, 0, 0, 1));
+      mesh_box *box = new mesh_box(vec3(4, 4, 0));
       scene_node *node = new scene_node();
       app_scene->add_child(node);
-      app_scene->add_mesh_instance(new mesh_instance(node, box, red));
+      app_scene->add_mesh_instance(new mesh_instance(node, box, red));*/
 
       plot_divide(0, 0, grid_height, 0);
     }
@@ -68,6 +70,16 @@ namespace octet {
 
           result = select(dot_prod, ground_threshold);
 
+          if (result == 1) {
+            vec3 location = vec3(j, i, 0);
+            material *red = new material(vec4(1, 0, 0, 1));
+            create_ground(location, red, false);
+          } else {
+            vec3 location = vec3(j, i, 0);
+            material *green = new material(vec4(0, 1, 0, 1));
+            create_ground(location, green, false);
+          }
+
           //printf("%i,%i", i, j);
           printf("%i", result);
           printf("\t");
@@ -76,13 +88,21 @@ namespace octet {
       }
     }
 
-    /// Select function.
+    /// Step function to differentiate between ground and sky.
     int select(float value, float threshold) {
       if (value >= threshold) {
         return 1;
       } else {
         return 0;
       }
+    }
+
+    /// Create ground.
+    void create_ground(vec3 location, material *color, bool is_dynamic) {
+      mat4t mat;
+      mat.loadIdentity();
+      mat.translate(location);
+      app_scene->add_shape(mat, new mesh_box(vec3(0.4, 0.4, 0)), color, is_dynamic);
     }
   };
 }
