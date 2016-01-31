@@ -25,7 +25,7 @@ namespace octet {
       app_scene->add_child(node);
       app_scene->add_mesh_instance(new mesh_instance(node, box, red));
 
-      plot_divide(0, grid_height / 2, grid_width, grid_height / 2);
+      plot_divide(0, 0, grid_height, 0);
     }
 
     /// This is called to draw the world.
@@ -49,6 +49,7 @@ namespace octet {
     // Variables.
     const int grid_width = 10;
     const int grid_height = 10;
+    const float ground_threshold = 0.5f;
 
   private:
     /// Plot divide.
@@ -56,17 +57,31 @@ namespace octet {
       int x_diff = x2 - x1;
       int y_diff = y2 - y1;
       int vlen = x_diff * x_diff + y_diff * y_diff;
+      int result = 0;
 
-      for (int i = 0; i < grid_height; i++) {
+      for (int i = grid_height - 1; i >= 0; i--) {
         int dy = i - y1;
         for (int j = 0; j < grid_width; j++) {
           int dx = j - x1;
           float dot_prod = dx * x_diff + dy * y_diff;
           dot_prod /= vlen;
 
-          printf("%i", dot_prod);
+          result = select(dot_prod, ground_threshold);
+
+          //printf("%i,%i", i, j);
+          printf("%i", result);
+          printf("\t");
         }
         printf("\n");
+      }
+    }
+
+    /// Select function.
+    int select(float value, float threshold) {
+      if (value >= threshold) {
+        return 1;
+      } else {
+        return 0;
       }
     }
   };
