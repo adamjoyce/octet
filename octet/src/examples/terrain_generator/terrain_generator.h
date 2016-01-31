@@ -18,7 +18,7 @@ namespace octet {
     void app_init() {
       app_scene =  new visual_scene();
       app_scene->create_default_camera_and_lights();
-      app_scene->get_camera_instance(0)->get_node()->translate(vec3(grid_width * 0.5, grid_height * 0.5, 0));
+      app_scene->get_camera_instance(0)->get_node()->translate(vec3(grid_width * 0.5, grid_height * 0.5, 30));
       //app_scene->get_camera_instance(0)->get_node()->rotate(90, vec3(0, 1, 0));
 
       /*material *red = new material(vec4(1, 0, 0, 1));
@@ -27,7 +27,8 @@ namespace octet {
       app_scene->add_child(node);
       app_scene->add_mesh_instance(new mesh_instance(node, box, red));*/
 
-      plot_divide(0, 0, grid_height, 0);
+      //plot_divide(0, 0, grid_height, 0);
+      random_noise(200);
     }
 
     /// This is called to draw the world.
@@ -49,8 +50,8 @@ namespace octet {
     }
 
     // Variables.
-    const int grid_width = 10;
-    const int grid_height = 10;
+    const int grid_width = 100;
+    const int grid_height = 20;
     const float ground_threshold = 0.5f;
 
   private:
@@ -81,10 +82,10 @@ namespace octet {
           }
 
           //printf("%i,%i", i, j);
-          printf("%i", result);
-          printf("\t");
+          //printf("%i", result);
+          //printf("\t");
         }
-        printf("\n");
+        //printf("\n");
       }
     }
 
@@ -103,6 +104,54 @@ namespace octet {
       mat.loadIdentity();
       mat.translate(location);
       app_scene->add_shape(mat, new mesh_box(vec3(0.4, 0.4, 0)), color, is_dynamic);
+    }
+
+    /// Random noise generator.
+    float random_noise(int seed) {
+      seed = (seed << 13) ^ seed;
+      return (1.0 - ((seed * (seed * seed * 15731 + 789221) + 1376312589) & 0x7fffff) / 1073741824.0);
+    }
+
+    /// Smooth noise.
+    float smooth_noise(float x) {
+      return random_noise(x) * 0.5 + random_noise(x - 1) * 0.25 + random_noise(x + 1) * 0.25; 
+    }
+
+    /// Cosine interpolation.
+    float cosine_interpolation(float v1, float v2, float x) {
+      float a = x * 3.1415927;
+      float b = (1 - cos(a)) * 0.5f;
+      return  v1 * (1 - b) + v2 * b;
+    }
+
+    /// Interpolated noise.
+    float interpolate_noise(float x) {
+      int int_x = int(x);
+      float fract_x = x - int_x;
+
+      float v1 = smooth_noise(int_x);
+      float v2 = smooth_noise(int_x + 1);
+
+      return cosine_interpolation(v1, v2, fract_x);
+    }
+
+    /// Perlin noise.
+    float perlin_noise(float x) {
+      float total = 0.0f;
+      float persistence = 0.5;
+      int octaves = 5;
+      
+      for (int i = 0; i < octaves - 1; i++) {
+        int frequency = 0;
+        float amplitude = 0.0f;
+        for (int j = 0; j < i; j++) {
+          frequency *= 2;
+          amplitude *= persistence;
+        }
+
+        total = total + interpolate_noise(x * frequency) * amplitude;
+      }
+      return total;
     }
   };
 }
