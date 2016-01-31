@@ -10,8 +10,8 @@ namespace octet {
     // scene for drawing box
     ref<visual_scene> app_scene;
   public:
-    /// This is called when we construct the class before everything is initialised.
     terrain_generator(int argc, char **argv) : app(argc, argv) {
+    /// This is called when we construct the class before everything is initialised.
     }
 
     /// This is called once OpenGL is initialized.
@@ -28,7 +28,29 @@ namespace octet {
       app_scene->add_mesh_instance(new mesh_instance(node, box, red));*/
 
       //plot_divide(0, 0, grid_height, 0);
-      random_noise(200);
+      //random_noise(200);
+      //printf("%i", perlin_noise(0.5f));
+
+      random rand;
+      // Calculate random gradient vectors.
+      for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 10; j++) {
+          float x = rand.get(-1.0f, 1.0f);
+          float y = rand.get(-1.0f, 1.0f);
+          gradient[j][i][0] = x;
+          gradient[j][i][1] = y;
+        }
+      }
+
+      for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 10; j++) {
+          float x = i / 0.4f;
+          float y = j / 0.4f;
+          float val = perlin_noise(x, y);
+          printf("%f", val);
+          printf("\t");
+        }
+      }
     }
 
     /// This is called to draw the world.
@@ -53,6 +75,8 @@ namespace octet {
     const int grid_width = 100;
     const int grid_height = 20;
     const float ground_threshold = 0.5f;
+
+    float gradient[10][10][2];
 
   private:
     /// Plot divide.
@@ -107,37 +131,37 @@ namespace octet {
     }
 
     /// Random noise generator.
-    float random_noise(int seed) {
+    /*double random_noise(int seed) {
       seed = (seed << 13) ^ seed;
-      return (1.0 - ((seed * (seed * seed * 15731 + 789221) + 1376312589) & 0x7fffff) / 1073741824.0);
+      return (double)(1.0 - ((seed * (seed * seed * 15731 + 789221) + 1376312589) & 0x7fffff) / 1073741824.0);
     }
 
     /// Smooth noise.
-    float smooth_noise(float x) {
+    double smooth_noise(double x) {
       return random_noise(x) * 0.5 + random_noise(x - 1) * 0.25 + random_noise(x + 1) * 0.25; 
     }
 
     /// Cosine interpolation.
-    float cosine_interpolation(float v1, float v2, float x) {
-      float a = x * 3.1415927;
-      float b = (1 - cos(a)) * 0.5f;
+    double cosine_interpolation(double v1, double v2, double x) {
+      double a = x * 3.1415927;
+      double b = (1 - cos(a)) * 0.5f;
       return  v1 * (1 - b) + v2 * b;
     }
 
     /// Interpolated noise.
-    float interpolate_noise(float x) {
+    double interpolate_noise(double x) {
       int int_x = int(x);
-      float fract_x = x - int_x;
+      double fract_x = x - int_x;
 
-      float v1 = smooth_noise(int_x);
-      float v2 = smooth_noise(int_x + 1);
+      double v1 = smooth_noise(int_x);
+      double v2 = smooth_noise(int_x + 1);
 
       return cosine_interpolation(v1, v2, fract_x);
     }
 
     /// Perlin noise.
-    float perlin_noise(float x) {
-      float total = 0.0f;
+    double perlin_noise(double x) {
+      double total = 0.0f;
       float persistence = 0.5;
       int octaves = 5;
       
@@ -152,6 +176,50 @@ namespace octet {
         total = total + interpolate_noise(x * frequency) * amplitude;
       }
       return total;
+    }*/
+
+    ////////////////////////////////
+    // Linear interpolation between two points.
+    // Ensure that w is between 0.0 and 1.0.
+    float lerp(float a0, float a1, float w) {
+      return (1.0 - w) * a0 + w * a1;
+    }
+
+    // Computes the dot product of distance and gradient vectors.
+    float dot_grid_gradient(int ix, int iy, float x, float y) {      
+      // Compute the distance vector.
+      float dx = x - (float)ix;
+      float dy = y - (float)iy;
+
+      // Compute the dot product.
+      return (dx * gradient[iy][ix][0] + dy * gradient[iy][ix][1]);
+    }
+
+    // Compute Perlin Noise at point (x, y).
+    float perlin_noise(float x, float y) {
+      // Determine cell grid coordinates.
+      int x0 = (x > 0.0f ? (int)x : (int)x - 1);
+      int x1 = x0 + 1;
+      int y0 = (y > 0.0f ? (int)y : (int)y - 1);
+      int y1 = y0 + 1;
+
+      // Determine interpolation weights.
+      float sx = x - (float)x0;
+      float sy = y - (float)y0;
+
+      // Interpolate between grid point gradients.
+      float n0, n1, ix0, ix1, value;
+      n0 = dot_grid_gradient(x0, y0, x, y);
+      n1 = dot_grid_gradient(x1, y0, x, y);
+      ix0 = lerp(n0, n1, sx);
+
+      n0 = dot_grid_gradient(x0, y1, x, y);
+      n1 = dot_grid_gradient(x1, y1, x, y);
+      ix1 = lerp(n0, n1, sx);
+
+      value = lerp(ix0, ix1, sy);
+
+      return value;
     }
   };
 }
