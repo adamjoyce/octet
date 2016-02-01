@@ -33,12 +33,12 @@ namespace octet {
       HWND console = GetConsoleWindow();
       HDC dc = GetDC(console);
   
-      initliase_perms();
+      initialise_perms();
 
-      float scale = 0.01f;
+      float scale = 0.007f;
       for (int i = 0; i < grid_height; i++) {
         for (int j = 0; j < grid_width; j++) {
-          luminance[j][i] = calculate_luminance(simplex_noise(j * scale, i * scale));
+          luminance[j][i] = fBM(16, j, i, 0.5f, scale, 0, 255);
           SetPixel(dc, j, i, RGB(luminance[j][i], luminance[j][i], luminance[j][i]));
           //int luminance = calculate_luminance(simplex_noise(float(j), float(i)));
           //printf("%i ", luminance);
@@ -103,17 +103,42 @@ namespace octet {
     short perm[512] = {};
     short perm_mod12[512] = {};
 
-    void initliase_perms() {
+    // Skewing and unsweing factors for two dimensions.
+    const double F2 = 0.5f * (sqrt(3.0f) - 1.0f);
+    const double G2 = (3.0f - sqrt(3.0f)) / 6.0f;
+
+    // Fractal Brownian Motion.
+    double fBM(int iterations, double x_in, double y_in, float persistence, float scale, int low, int high) {
+      float amplitude = 1.0f;
+      float current_amplitude = 0.0f;
+      float frequency = scale;
+      double noise = 0.0f;
+
+      // Calculate and add the octaves together.
+      for (int i = 0; i < iterations; i++) {
+        noise += simplex_noise(x_in * frequency, y_in * frequency) * amplitude;
+        current_amplitude += amplitude;
+        amplitude *= persistence;
+        frequency *= 2;
+      }
+
+      // Take the average of the summed iterations.
+      noise /= current_amplitude;
+
+      // Normalise the result.
+      noise = noise * (high - low) / 2 + (high + low) / 2;
+
+      return noise;
+    }
+
+    // Initiliase perms.
+    void initialise_perms() {
       for (int i = 0; i < 512; i++)
       {
         perm[i] = p[i & 255];
         perm_mod12[i] = (short)(perm[i] % 12);
       }
     }
-
-    // Skewing and unsweing factors for two dimensions.
-    const double F2 = 0.5f * (sqrt(3.0f) - 1.0f);
-    const double G2 = (3.0f - sqrt(3.0f)) / 6.0f;
 
     // Fast floor function.
     int fast_floor(double x) {
@@ -127,22 +152,22 @@ namespace octet {
     }
 
     // Two dimension Simplex Noise.
-    double simplex_noise(double xin, double yin) {
+    double simplex_noise(double x_in, double y_in) {
       // Noise contributions from the three corners.
       double n0, n1, n2;
 
       // Skew the input grid to determine which cell the coordinates fall into.
-      double s = (xin + yin) * F2;
-      int i = fast_floor(xin + s);
-      int j = fast_floor(yin + s);
+      double s = (x_in + y_in) * F2;
+      int i = fast_floor(x_in + s);
+      int j = fast_floor(y_in + s);
       double t = (i + j) * G2;
 
       // Unskew the cell origin back to (x, y) space.
       double x_zero = i - t;
       double y_zero = j - t;
       // The x and y distances from the cell origin.
-      double x0 = xin - x_zero;
-      double y0 = yin - y_zero;
+      double x0 = x_in - x_zero;
+      double y0 = y_in - y_zero;
 
       // Determine which simplex the coordinates fall in.
       // Simplexes are equilateral triangles for the two dimension case.
