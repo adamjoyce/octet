@@ -33,6 +33,12 @@ namespace octet {
       noise.initialise_perms();
 
       std::vector<std::vector<int>> luminance(grid_height, std::vector<int>(grid_width, 0));
+      /*std::vector<int> height(grid_height, 0);
+
+      for (int i = 0; i < grid_height; i++) {
+        height[i] = noise.simplex_noise(i);
+        printf("%i ", height[i]);
+      }*/
       
       // Windows-only code used to inefficiently display noise maps in the console window.
       console = GetConsoleWindow();
@@ -42,14 +48,15 @@ namespace octet {
       pixel_luminance(noise, luminance);
 
       // Set up the height landscape array.
-      random rand;
+      /*random rand;
       int index = rand.get(0, grid_height);
       std::vector<int> height_line(grid_width, 0);
       for (int i = 0; i < luminance[index].size(); i++) {
         height_line[i] = luminance[index][i];
-      }
+      }*/
 
-      draw_height_line(height_line);
+      std::vector<int> height_line(grid_width, 0);
+      draw_height_line(noise, height_line);
 
       ReleaseDC(console, dc);
     }
@@ -86,7 +93,7 @@ namespace octet {
     HWND console;
     HDC dc;
  
-    // Determine the luminance for each pixel in the grid (and draw them in Windows consoles).
+    // Determine the luminance for each pixel in the 2D grid (and draw them in Windows console).
     void pixel_luminance(noise &noise, std::vector<std::vector<int>> &luminance) {
       for (int i = grid_height - 1; i >= 0; i--) {
         for (int j = 0; j < grid_width; j++) {
@@ -101,7 +108,11 @@ namespace octet {
 
     // WINDOWS ONLY.
     //Draws the height line for the terrain in the windows console.
-    void draw_height_line(const std::vector<int> &height_line) {
+    void draw_height_line(noise &noise, std::vector<int> &height_line) {
+      for (int i = 0; i < grid_width; i++) {
+        height_line[i] = noise.fBM(iterations, 0, i, 0.2f, scale_factor, 0, 255);
+        //printf("%i ", height_line[i]);
+      }
       for (int i = 0; i < grid_width; i++) {
         for (int j = grid_height - 1; j >= 0; j--) {
           if (j == height_line[i]) {
