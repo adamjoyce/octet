@@ -179,7 +179,7 @@ namespace octet {
       int gi2 = perm_mod12[ii + 1 + perm[jj + 1]];
 
       // Calculate the contribution from each of the three corners.
-      double t0 = 0.5f - x1 * x1 - y1 * y1;
+      double t0 = 0.5f - x0 * x0 - y0 * y0;
       if (t0 < 0) {
         n0 = 0.0f;
       } else {
