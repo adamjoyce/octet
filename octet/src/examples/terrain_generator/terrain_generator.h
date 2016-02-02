@@ -20,7 +20,8 @@ namespace octet {
     void app_init() {
       app_scene = new visual_scene();
       app_scene->create_default_camera_and_lights();
-      //app_scene->get_camera_instance(0)->get_node()->translate(vec3(grid_width * 0.5, grid_height * 0.5, 30));
+      app_scene->get_camera_instance(0)->set_far_plane(1000);
+      app_scene->get_camera_instance(0)->get_node()->translate(vec3(grid_width * 0.5f, grid_height * 0.5f, 260));
       //app_scene->get_camera_instance(0)->get_node()->rotate(90, vec3(0, 1, 0));
 
       /*material *red = new material(vec4(1, 0, 0, 1));
@@ -104,25 +105,51 @@ namespace octet {
         }
         //printf("\n");
       }
-    }
+    } 
 
     // WINDOWS ONLY.
     //Draws the height line for the terrain in the windows console.
     void draw_height_line(noise &noise, std::vector<int> &height_line) {
+      int max_height = 0;
+      int min_height = grid_height;
       for (int i = 0; i < grid_width; i++) {
-        height_line[i] = noise.fBM(iterations, 0, i, 0.2f, scale_factor, 0, 255);
-        //printf("%i ", height_line[i]);
+        height_line[i] = noise.fBM(iterations, 0, i, 0.4f, 0.003f, 0, 255);
+        if (height_line[i] > max_height) {
+          max_height = height_line[i];
+        } else if (height_line[i] < min_height) {
+          min_height = height_line[i];
+        }
       }
+
+      //min_height = grid_height - min_height;
+      //max_height = grid_height - max_height;
+      //printf("%i , %i ", min_height, max_height);
+
+      material *red = new material(vec4(1, 0, 0, 1));
+      bool line_reached = false;
       for (int i = 0; i < grid_width; i++) {
-        for (int j = grid_height - 1; j >= 0; j--) {
-          if (j == height_line[i]) {
+        for (int j = min_height - 1; j < max_height; j++) {
+          if (line_reached || j == height_line[i] - 1) {
             SetPixel(dc, i + 255, j, RGB(255, 255, 255));
+            line_reached = true;
+
+            //create_ground_tile(vec3(i, j, 0), red, false);
           }
           else {
             SetPixel(dc, i + 255, j, RGB(0, 0, 0));
+            create_ground_tile(vec3(i, j, 0), red, false);
           }
         }
+        line_reached = false;
       }
+    }
+
+    // Creates a 2D box representing a ground tile.
+    void create_ground_tile(vec3 location, material *color, bool is_dynamic) {
+      mat4t mat;
+      mat.loadIdentity();
+      mat.translate(location);
+      app_scene->add_shape(mat, new mesh_box(vec3(0.5, 0.5, 0)), color, is_dynamic);
     }
   };
 }
