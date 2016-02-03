@@ -19,7 +19,7 @@ namespace octet {
     void app_init() {
       app_scene = new visual_scene();
       app_scene->create_default_camera_and_lights();
-      app_scene->get_camera_instance(0)->set_far_plane(1000);
+      app_scene->get_camera_instance(0)->set_far_plane(450);
       app_scene->get_camera_instance(0)->get_node()->translate(vec3(grid_width * 0.5f, grid_height * 0.5f, 400));
 
       // Overlay text.
@@ -32,23 +32,26 @@ namespace octet {
       overlay->add_mesh_text(control_information);
 
       // Materials.
-      ground = new material(vec4(1, 0, 0, 1));
-      under_ground = new material(vec4(0, 0, 1, 1));
+      ground_mat = new material(vec4(1, 0, 0, 1));
+
+      // Assign the vector arrays space.
+      meshes = std::vector<std::vector<mesh_instance>>();
+      height_line = std::vector<int>(grid_width, 0);
+      luminance = std::vector<std::vector<int>>(grid_width, std::vector<int>(grid_width, 0));
 
       // Noise setup.
-      noise noise;
       noise.initialise_perms();
-
-      // Arrays for terrain data.
-      std::vector<int> height_line(grid_width, 0);
-      std::vector<std::vector<int>> luminance(grid_height, std::vector<int>(grid_width, 0));
       
       // WINDOWS-ONLY code used to display noise maps in the console window - extremely inefficient.
       console = GetConsoleWindow();
       dc = GetDC(console);
 
-      draw_height_line(noise, height_line);
-      pixel_luminance(noise, height_line, luminance);
+      generate_terrain_grid();
+      generate_height_line();
+      generate_cave_noise();
+
+      //draw_height_line(noise, height_line);
+      //pixel_luminance(noise, height_line, luminance);
 
       // WINDOWS-ONLY code.
       //ReleaseDC(console, dc);
@@ -65,8 +68,6 @@ namespace octet {
 
       // Draw the scene.
       app_scene->render((float)vx / vy);
-
-      //draw_triangle();
 
       handle_input();
 
@@ -95,10 +96,10 @@ namespace octet {
       "Move Up/Down    = UP/DOWN ARROW\n";
 
     // Materials.
-    material *ground;
-    material *under_ground;
+    material *ground_mat;
 
     // Noise variables.
+    noise noise;
     int iterations = 16;
     int luminance_threshold = 128;
     float scale = 0.08f;
@@ -110,12 +111,16 @@ namespace octet {
     float scale_inc = 0.02f;
     float persistence_inc = 0.1f;
 
-
     // Terrain / noise grid dimensions.
     const int grid_height = 256;
     const int grid_width = 256;
 
-    // To store bounding height values for terrain.
+    // Arrays for terrain data.
+    std::vector<std::vector<mesh_instance>> meshes;
+    std::vector<int> height_line;
+    std::vector<std::vector<int>> luminance;
+
+    // To store maximum height values for terrain.
     int max_height = 0;
     int min_height = grid_height;
 
@@ -123,65 +128,74 @@ namespace octet {
     HWND console;
     HDC dc;
 
-    /// Determine the luminance for each pixel in the 2D grid (and draw them in Windows console).
-    void pixel_luminance(noise &noise, std::vector<int> &height_line, std::vector<std::vector<int>> &luminance) {
-      bool height_reached = false;
+    /// Generates a grid of ground meshes with dimenions grid_width by grid_height.
+    void generate_terrain_grid() {
       for (int i = 0; i < grid_width; i++) {
         for (int j = 0; j < grid_height; j++) {
-          luminance[i][j] = noise.fBM(16, i, j, persistence, scale, 0, 255);
-          if (j <= height_line[i] && luminance[i][j] >= luminance_threshold) {
-            create_ground_tile(vec3(i, j, 0), ground, false);
-          }
-          // WINDOWS-ONLY.
-          SetPixel(dc, j, i, RGB(luminance[i][j], luminance[i][j], luminance[i][j]));
-          //printf("%i ", luminance);
+          create_ground_tile(vec3(i, j, 0), ground_mat, false);
+          meshes.push_back(app_scene->get_mesh_instance(i));
         }
-        //printf("\n");
-      }
-    } 
-
-    /// WINDOWS-ONLY.
-    ///Draws the height line for the terrain in the windows console.
-    void draw_height_line(noise &noise, std::vector<int> &height_line) {
-      for (int i = 0; i < grid_width; i++) {
-        height_line[i] = noise.fBM(iterations, 0, i, 0.5f, 0.007f, 0, 255);
-        if (height_line[i] > max_height) {
-          max_height = height_line[i];
-        } else if (height_line[i] < min_height) {
-          min_height = height_line[i];
-        }
-      }
-
-      //min_height = grid_height - min_height;
-      //max_height = grid_height - max_height;
-      //printf("%i , %i ", min_height, max_height);
-
-      bool line_reached = false;
-      for (int i = 0; i < grid_width; i++) {
-        int red = 0;
-        for (int j = min_height - 1; j < max_height; j++) {
-          if (line_reached || j == height_line[i] - 1) {
-            SetPixel(dc, i + 255, j, RGB(255, 255, 255));
-            line_reached = true;
-          }
-          else {
-            SetPixel(dc, i + 255, j, RGB(0, 0, 0));
-            //create_ground_tile(vec3(i, j, 0), ground, false);
-            red = 1;
-          }
-          //printf("%i, %i, %i\n", i, j, red);
-          red = 0;
-        }
-        line_reached = false;
       }
     }
 
-    // Creates a 2D box representing a ground tile.
+    /// Creates a 2D box mesh representing a ground tile.
     void create_ground_tile(vec3 location, material *color, bool is_dynamic) {
       mat4t mat;
       mat.loadIdentity();
       mat.translate(location);
       app_scene->add_shape(mat, new mesh_box(vec3(0.5, 0.5, 0)), color, is_dynamic);
+    }
+
+    ///Draws the height line for the terrain in the windows console.
+    void generate_height_line() {
+      for (int i = 0; i < grid_width; i++) {
+        height_line[i] = noise.fBM(iterations, 0, i, 0.5f, 0.007f, 0, 255);
+        if (height_line[i] > max_height) {
+          max_height = height_line[i];
+        }
+        else if (height_line[i] < min_height) {
+          min_height = height_line[i];
+        }
+        // WINDOWS-ONLY.
+        //draw_line_to_console();
+      }
+    }
+
+    /// WINDOWS-ONLY function that draws the generated height line in the console window.
+    void draw_line_to_console() {
+      bool line_reached = false;
+      for (int i = 0; i < grid_width; i++) {
+        int red = 0;
+        for (int j = 255 - min_height - 1; j > 255 - max_height; j--) {
+          if (j == 255 - height_line[i] - 1) {
+            SetPixel(dc, i + 255, j, RGB(255, 255, 255));
+            break;
+          }
+        }
+      }
+    }
+
+    /// Generate noise for each grid cell and determine if ground should appear there.
+    void generate_cave_noise() {
+      // Generate noise for each grid coordinate.
+      bool height_reached = false;
+      for (int i = 0; i < grid_width; i++) {
+        for (int j = 0; j < grid_height; j++) {
+          luminance[i][j] = noise.fBM(16, i, j, persistence, scale, 0, 255);
+         
+          if (j <= height_line[i] && luminance[i][j] >= luminance_threshold) {
+            // Ground is present!
+          } else {
+            // Remove ground block from render frustrum.
+            int x = i + 1;
+
+          }
+          // WINDOWS-ONLY.
+          //SetPixel(dc, j, i, RGB(luminance[i][j], luminance[i][j], luminance[i][j]));
+          //printf("%i ", luminance);
+        }
+        //printf("\n");
+      }
     }
 
     /// Detect inputs for a number of actions on the terrain.
@@ -264,50 +278,6 @@ namespace octet {
 
       // Render the overlay.
       overlay->render(vx, vy);
-    }
-
-    void draw_triangle() {
-      ref<color_shader> shader;
-      GLuint vertices;
-
-      shader = new color_shader();
-
-      glGenBuffers(1, &vertices);
-      glBindBuffer(GL_ARRAY_BUFFER, vertices);
-
-      // corners (vertices) of the triangle
-      static const float vertex_data[] = {
-        -0.5f, -0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f,
-        0.0f,  0.5f, 0.0f,
-      };
-
-      glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_data), vertex_data, GL_STATIC_DRAW);
-      /// clear the background and the depth buffer
-      glClearColor(0, 0, 1, 1);
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-      /// allow Z buffer depth testing (closer objects are always drawn in front of far ones)
-      glEnable(GL_DEPTH_TEST);
-
-      // we use a unit matrix will not change the (-1..1, -1..1, -1..1) xyz space of OpenGL
-      mat4t modelToProjection;
-
-      // we use a simple solid color shader.
-      vec4 emissive_color(1, 1, 0, 1);
-      shader->render(modelToProjection, emissive_color);
-
-      // use vertex attribute 0 for our vertices (we could use 1, 2, 3 etc for other things)
-      glEnableVertexAttribArray(0);
-
-      // use the buffer we made earlier.
-      glBindBuffer(GL_ARRAY_BUFFER, vertices);
-
-      // tell OpenGL what kind of vertices we have
-      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), NULL);
-
-      // draw a triangle
-      glDrawArrays(GL_TRIANGLES, 0, 3);
     }
   };
 }
