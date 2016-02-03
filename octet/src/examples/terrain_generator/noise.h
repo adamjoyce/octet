@@ -1,4 +1,9 @@
-// Noise class.
+// A class used to generate 2D Simplex Noise.
+// There is an implementation for Fractional Brownian motion to merge several
+// octaves.
+//
+// Author: Adam Joyce
+// Version: 1.04
 
 #include <math.h>;
 
@@ -10,30 +15,6 @@ namespace octet {
 
     ~noise() {
     }
-
-    // Fractional Brownian Motion using 1D Simplex Noise.
-    /*float fBM(int iterations, float x_in, float persistence, float scale, int low, int high) {
-      float amplitude = 1.0f;
-      float current_amplitude = 0.0f;
-      float frequency = scale;
-      float noise = 0.0f;
-
-      // Calculate and add the octaves together.
-      for (int i = 0; i < iterations; i++) {
-        noise += simplex_noise(x_in * frequency) * amplitude;
-        current_amplitude += amplitude;
-        amplitude *= persistence;
-        frequency *= 2;
-      }
-
-      // Take the average of the summed iterations.
-      noise /= current_amplitude;
-
-      // Normalise the result.
-      noise = noise * (high - low) / 2 + (high + low) / 2;
-
-      return noise;
-    }*/
 
     // Fractional Brownian Motion using 2D Simplex Noise.
     float fBM(int iterations, float x_in, float y_in, float persistence, float scale, int low, int high) {
@@ -65,15 +46,10 @@ namespace octet {
       {
         perm[i] = p[i & 255];
         perm_mod12[i] = (short)(perm[i] % 12);
-        //perm_mod16[i] = (short)(perm[i] % 16);
       }
     }
 
   private:
-    /*const float grad1[16] = {-8.f, -7.f, -6.f, -5.f, -4.f, -3.f, -2.f,
-                              -1.f, 1.f,  2.f,  3.f,  4.f,  5.f,  6.f,
-                              7.f,  8.f};*/
-
     vec3 grad3[12] = { vec3(1,1,0), vec3(-1,1,0), vec3(1,-1,0), vec3(-1,-1,0),
       vec3(1,0,1), vec3(-1,0,1), vec3(1,0,-1), vec3(-1,0,-1),
       vec3(0,1,1), vec3(0,-1,1), vec3(0,1,-1), vec3(0,-1,-1) };
@@ -102,7 +78,6 @@ namespace octet {
     // Double the permutation table length to remove the need for index wrapping.
     short perm[512] = {};
     short perm_mod12[512] = {};
-    //short perm_mod16[512] = {};
 
     // Skewing and unsweing factors for two dimensions.
     const float F2 = 0.5f * (sqrt(3.0f) - 1.0f);
@@ -114,47 +89,10 @@ namespace octet {
       return x > xi ? xi : xi - 1;
     }
 
-    // Dot product for one dimension.
-    /*float dot(vec3 gradient, float x) {
-      return gradient[0] * x;
-    }*/
-
     // Dot product for two dimensions.
     float dot(vec3 gradient, float x, float y) {
       return gradient[0] * x + gradient[1] * y;
     }
-
-    // One dimensional Simplex Noise.
-    /*float simplex_noise(float x_in) {
-      // Noise contributions from the two corners.
-      float n0, n1;
-
-      // Skewing is unecessary in one dimensional space.
-
-      // Corner coordinates.
-      int i0 = fast_floor(x_in);
-      int i1 = i0 + 1;
-      // Distance from corners.
-      float x0 = x_in - i0;
-      float x1 = x0 + 1.0f;
-
-      // Calculate hashed gradient indices for corners.
-      int ii = i0 & 255;
-      int gi0 = perm_mod16[ii];
-      int gi1 = perm_mod16[ii + 1];
-
-      // Calculate contributions from the corners.
-      float t0 = 1.0f - x0 * x0;
-      t0 *= t0;
-      n0 = t0 * t0 * dot(grad1[gi0], x0);
-
-      float t1 = 1.0f - x1 * x1;
-      t1 *= t1;
-      n1 = t1 * t1 * dot(grad1[gi1], x1);
-      printf("%f ", n0 + n1 * 0.395f);
-      printf("\n");
-      return 0.395f * (n0 + n1);
-    }*/
 
     // Two dimensional Simplex Noise.
     float simplex_noise(float x_in, float y_in) {

@@ -1,4 +1,14 @@
-// Terrain Generator.
+// A simple terrain generator.
+// Generates 2D terrain using fBM with Simplex noise.
+// Allows the fBM variables to be adjusted for a clear view of the
+// effects on the landscape.
+//
+// Next steps would be to run a gradient function downwards through the terrain to 
+// close off the cave holes at the surface while leaving the ones lower down inside 
+// the terrain.
+//
+// Author: Adam Joyce
+// Versom: 1.07
 
 #include "noise.h";
 #include <math.h>;
@@ -6,9 +16,8 @@
 #include <vector>;
 
 namespace octet {
-  /// Scene containing a box with octet.
   class terrain_generator : public app {
-    // Scene for drawing box.
+    // Scene for drawing.
     ref<visual_scene> app_scene;
 
   public:
@@ -35,7 +44,6 @@ namespace octet {
       ground_mat = new material(vec4(1, 1, 1, 1));
 
       // Assign the vector arrays space.
-      meshes = std::vector<std::vector<mesh_instance>>();
       height_line = std::vector<int>(grid_width, 0);
       luminance = std::vector<std::vector<int>>(grid_width, std::vector<int>(grid_width, 0));
 
@@ -49,9 +57,6 @@ namespace octet {
       generate_terrain_grid();
       generate_height_line();
       generate_cave_noise();
-     
-      //draw_height_line(noise, height_line);
-      //pixel_luminance(noise, height_line, luminance);
 
       // WINDOWS-ONLY code.
       //ReleaseDC(console, dc);
@@ -72,11 +77,6 @@ namespace octet {
       handle_input();
 
       update_text(vx, vy);
-
-      // Tumble the box (there is only one mesh instance).
-      //scene_node *node = app_scene->get_mesh_instance(0)->get_node();
-      //node->rotate(1, vec3(1, 0, 0));
-      //node->rotate(1, vec3(0, 1, 0));
     }
 
   private:
@@ -87,10 +87,11 @@ namespace octet {
 
     // For overlay display.
     string controls = "Controls:\n"
-      "+/- Octaves     = F1/F2 or 1/2\n"
+      "+/- Octaves     = F1/F2\n"
       "+/- Threshold   = F3/F4\n"
-      "+/- Scale/Freq  = F5/F6 or 5/6\n"
-      "+/- Persistence = F7/F8 or 7/8\n";
+      "+/- Scale/Freq  = F5/F6\n"
+      "+/- Persistence = F7/F8\n"
+      "New Height Line = ESC";
 
     // Materials.
     material *ground_mat;
@@ -113,13 +114,15 @@ namespace octet {
     const int grid_width = 256;
 
     // Arrays for terrain data.
-    std::vector<std::vector<mesh_instance>> meshes;
     std::vector<int> height_line;
     std::vector<std::vector<int>> luminance;
 
     // To store maximum height values for terrain.
     int max_height = 0;
     int min_height = grid_height;
+
+    // For height line selection.
+    random rand;
 
     // WINDOWS-ONLY console variables.
     HWND console;
@@ -130,7 +133,6 @@ namespace octet {
       for (int i = 0; i < grid_width; i++) {
         for (int j = 0; j < grid_height; j++) {
           create_ground_tile(vec3(i, j, 0), ground_mat, false);
-          //meshes.push_back.push_back(app_scene->get_mesh_instance(i));
         }
       }
     }
@@ -145,8 +147,9 @@ namespace octet {
 
     ///Draws the height line for the terrain in the windows console.
     void generate_height_line() {
+      int r = rand.get(0, grid_height);
       for (int i = 0; i < grid_width; i++) {
-        height_line[i] = noise.fBM(iterations, 0, i, 0.5f, 0.007f, 0, 255);
+        height_line[i] = noise.fBM(iterations, r, i, 0.5f, 0.007f, 0, 255);
         if (height_line[i] > max_height) {
           max_height = height_line[i];
         }
@@ -154,18 +157,17 @@ namespace octet {
           min_height = height_line[i];
         }
         // WINDOWS-ONLY.
-        //draw_line_to_console();
+        draw_line_to_console(255);
       }
     }
 
     /// WINDOWS-ONLY function that draws the generated height line in the console window.
-    void draw_line_to_console() {
-      bool line_reached = false;
+    void draw_line_to_console(int color) {
       for (int i = 0; i < grid_width; i++) {
         int red = 0;
-        for (int j = 255 - min_height - 1; j > 255 - max_height; j--) {
-          if (j == 255 - height_line[i] - 1) {
-            SetPixel(dc, i + 255, j, RGB(255, 255, 255));
+        for (int j = grid_width - 1 - min_height - 1; j > 255 - max_height; j--) {
+          if (j == grid_width - 1 - height_line[i] - 1) {
+            SetPixel(dc, i + grid_width, j, RGB(color, color, color));
             break;
           }
         }
@@ -242,9 +244,25 @@ namespace octet {
         adjustments = true;
       }
 
+      // New random height line.
+      if (is_key_going_down(key_esc)) {
+        generate_height_line();
+        adjustments = true;
+      }
+
       // Redraw for any changes.
       if (adjustments) {
         generate_cave_noise();
+      }
+    }
+
+    /// WINDOWS-ONLY blacks out the previous height line in the console.
+    /// Very inefficient, mainly used for 'quick' testing.
+    void remove_previous_height_line() {
+      for (int i = 0; i < height_line.size(); i++) {
+        for (int j = 0; j < grid_width; i++) {
+          SetPixel(dc, i + grid_width, j, RGB(0, 0, 0));
+        }
       }
     }
 
