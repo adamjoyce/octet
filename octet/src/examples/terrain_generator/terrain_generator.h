@@ -49,7 +49,7 @@ namespace octet {
       generate_terrain_grid();
       generate_height_line();
       generate_cave_noise();
-
+     
       //draw_height_line(noise, height_line);
       //pixel_luminance(noise, height_line, luminance);
 
@@ -133,7 +133,7 @@ namespace octet {
       for (int i = 0; i < grid_width; i++) {
         for (int j = 0; j < grid_height; j++) {
           create_ground_tile(vec3(i, j, 0), ground_mat, false);
-          meshes.push_back(app_scene->get_mesh_instance(i));
+          //meshes.push_back.push_back(app_scene->get_mesh_instance(i));
         }
       }
     }
@@ -179,22 +179,25 @@ namespace octet {
     void generate_cave_noise() {
       // Generate noise for each grid coordinate.
       bool height_reached = false;
-      for (int i = 0; i < grid_width; i++) {
-        for (int j = 0; j < grid_height; j++) {
-          luminance[i][j] = noise.fBM(16, i, j, persistence, scale, 0, 255);
+      for (int i = 0; i < grid_height; i++) {
+        for (int j = 0; j < grid_width; j++) {
+          luminance[i][j] = noise.fBM(iterations, i, j, persistence, scale, 0, 255);
          
+          scene_node *node = app_scene->get_mesh_instance(i * grid_width + j)->get_node();
           if (j <= height_line[i] && luminance[i][j] >= luminance_threshold) {
             // Ground is present!
+            if (!node->get_enabled()) {
+              node->set_enabled(true);
+            }
           } else {
             // Remove ground block from render frustrum.
-            int x = i + 1;
-
+            if (node->get_enabled()) {
+              node->set_enabled(false);
+            }
           }
           // WINDOWS-ONLY.
-          //SetPixel(dc, j, i, RGB(luminance[i][j], luminance[i][j], luminance[i][j]));
-          //printf("%i ", luminance);
+          SetPixel(dc, j, i, RGB(luminance[i][j], luminance[i][j], luminance[i][j]));
         }
-        //printf("\n");
       }
     }
 
