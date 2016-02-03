@@ -8,12 +8,11 @@
 namespace octet {
   /// Scene containing a box with octet.
   class terrain_generator : public app {
-    // scene for drawing box
+    // Scene for drawing box.
     ref<visual_scene> app_scene;
 
   public:
     terrain_generator(int argc, char **argv) : app(argc, argv) {
-    /// This is called when we construct the class before everything is initialised.
     }
 
     /// This is called once OpenGL is initialized.
@@ -22,7 +21,6 @@ namespace octet {
       app_scene->create_default_camera_and_lights();
       app_scene->get_camera_instance(0)->set_far_plane(1000);
       app_scene->get_camera_instance(0)->get_node()->translate(vec3(grid_width * 0.5f, grid_height * 0.5f, 400));
-      //app_scene->get_camera_instance(0)->get_node()->rotate(90, vec3(0, 1, 0));
 
       // Overlay text.
       aabb bb0(vec3(-210, 200, 0), vec3(160, 150, 0));
@@ -33,41 +31,27 @@ namespace octet {
       overlay->add_mesh_text(noise_information);
       overlay->add_mesh_text(control_information);
 
-      noise noise;
-      noise.initialise_perms();
-
-      std::vector<std::vector<int>> luminance(grid_height, std::vector<int>(grid_width, 0));
-
+      // Materials.
       ground = new material(vec4(1, 0, 0, 1));
       under_ground = new material(vec4(0, 0, 1, 1));
 
-      /*std::vector<int> height(grid_height, 0);
+      // Noise setup.
+      noise noise;
+      noise.initialise_perms();
 
-
-      for (int i = 0; i < grid_height; i++) {
-        height[i] = noise.simplex_noise(i);
-        printf("%i ", height[i]);
-      }*/
+      // Arrays for terrain data.
+      std::vector<int> height_line(grid_width, 0);
+      std::vector<std::vector<int>> luminance(grid_height, std::vector<int>(grid_width, 0));
       
-      // Windows-only code used to inefficiently display noise maps in the console window.
+      // WINDOWS-ONLY code used to display noise maps in the console window - extremely inefficient.
       console = GetConsoleWindow();
       dc = GetDC(console);
 
-      std::vector<int> height_line(grid_width, 0);
-      //draw_height_line(noise, height_line);
+      draw_height_line(noise, height_line);
+      pixel_luminance(noise, height_line, luminance);
 
-      // Populate the luminance values for the grid.
-      //pixel_luminance(noise, height_line, luminance);
-
-      // Set up the height landscape array.
-      /*random rand;
-      int index = rand.get(0, grid_height);
-      std::vector<int> height_line(grid_width, 0);
-      for (int i = 0; i < luminance[index].size(); i++) {
-        height_line[i] = luminance[index][i];
-      }*/
-
-      ReleaseDC(console, dc);
+      // WINDOWS-ONLY code.
+      //ReleaseDC(console, dc);
     }
 
     /// This is called to draw the world.
@@ -79,8 +63,10 @@ namespace octet {
       // Update matrices. Assumes 30 fps.
       app_scene->update(1.0f/30);
 
-      // draw the scene
+      // Draw the scene.
       app_scene->render((float)vx / vy);
+
+      //draw_triangle();
 
       handle_input();
 
@@ -108,38 +94,45 @@ namespace octet {
       "+/- Zoom        = RIGHT/LEFT ARROW\n"
       "Move Up/Down    = UP/DOWN ARROW\n";
 
-    // Private variables.
-    const int grid_height = 256;
-    const int grid_width = 256;
-
-    // Noise variables.
-    const float scale_factor = 0.007f;
-    const int iterations = 16;
-    const float persistense = 0.5f;
-    const int luminance_threshold = 128;
-
-    // 
-    int max_height = 0;
-    int min_height = grid_height;
-
-    //
+    // Materials.
     material *ground;
     material *under_ground;
 
-    // Windows-only console variables.
+    // Noise variables.
+    int iterations = 16;
+    int luminance_threshold = 128;
+    float scale = 0.08f;
+    float persistence = 0.5f;
+  
+    // Increment variables.
+    int iterations_inc = 2;
+    int threshold_inc = 10;
+    float scale_inc = 0.02f;
+    float persistence_inc = 0.1f;
+
+
+    // Terrain / noise grid dimensions.
+    const int grid_height = 256;
+    const int grid_width = 256;
+
+    // To store bounding height values for terrain.
+    int max_height = 0;
+    int min_height = grid_height;
+
+    // WINDOWS-ONLY console variables.
     HWND console;
     HDC dc;
- 
-    // Determine the luminance for each pixel in the 2D grid (and draw them in Windows console).
+
+    /// Determine the luminance for each pixel in the 2D grid (and draw them in Windows console).
     void pixel_luminance(noise &noise, std::vector<int> &height_line, std::vector<std::vector<int>> &luminance) {
       bool height_reached = false;
       for (int i = 0; i < grid_width; i++) {
         for (int j = 0; j < grid_height; j++) {
-          luminance[i][j] = noise.fBM(16, i, j, persistense, scale_factor, 0, 255);
+          luminance[i][j] = noise.fBM(16, i, j, persistence, scale, 0, 255);
           if (j <= height_line[i] && luminance[i][j] >= luminance_threshold) {
             create_ground_tile(vec3(i, j, 0), ground, false);
           }
-          // WINDOWS ONLY.
+          // WINDOWS-ONLY.
           SetPixel(dc, j, i, RGB(luminance[i][j], luminance[i][j], luminance[i][j]));
           //printf("%i ", luminance);
         }
@@ -147,8 +140,8 @@ namespace octet {
       }
     } 
 
-    // WINDOWS ONLY.
-    //Draws the height line for the terrain in the windows console.
+    /// WINDOWS-ONLY.
+    ///Draws the height line for the terrain in the windows console.
     void draw_height_line(noise &noise, std::vector<int> &height_line) {
       for (int i = 0; i < grid_width; i++) {
         height_line[i] = noise.fBM(iterations, 0, i, 0.5f, 0.007f, 0, 255);
@@ -193,7 +186,53 @@ namespace octet {
 
     /// Detect inputs for a number of actions on the terrain.
     void handle_input() {
-      
+      adjust_noise_variables();
+    }
+
+    void adjust_noise_variables() {
+      bool adjustments = false;
+
+      // Iterations.
+      if (is_key_going_down(key_f1)) {
+        iterations += iterations_inc;
+        adjustments = true;
+      } else if (is_key_going_down(key_f2)) {
+        iterations -= iterations_inc;
+        adjustments = true;
+      }
+
+      // Luminance Threshold.
+      if (is_key_going_down(key_f3)) {
+        luminance_threshold += threshold_inc;
+        adjustments = true;
+      } else if (is_key_going_down(key_f4)) {
+        luminance_threshold -= threshold_inc;
+        adjustments = true;
+      }
+
+      // Scale / Frequency.
+      if (is_key_going_down(key_f5)) {
+        scale += scale_inc;
+        adjustments = true;
+      } else if (is_key_going_down(key_f6)) {
+        scale -= scale_inc;
+        adjustments = true;
+      }
+
+      // Persistence.
+      if (is_key_going_down(key_f7)) {
+        persistence += persistence_inc;
+        adjustments = true;
+      }
+      else if (is_key_going_down(key_f8)) {
+        persistence -= persistence_inc;
+        adjustments = true;
+      }
+
+      // Redraw for any changes.
+      if (adjustments) {
+        app_init();
+      }
     }
 
     /// Update the terrain information on the text overlay.
@@ -204,16 +243,16 @@ namespace octet {
       // Write text.
       char buffer[5][256];
       sprintf(buffer[0], "%i", iterations);
-      sprintf(buffer[1], "%.4f", scale_factor);
-      sprintf(buffer[2], "%.4f", persistense);
+      sprintf(buffer[1], "%.4f", scale);
+      sprintf(buffer[2], "%.4f", persistence);
       sprintf(buffer[3], "%i", luminance_threshold);
 
       // Format the mesh.
       noise_information->format("Noise Information:\n"
-                                "Iterations:                %s\n"
-                                "Scale Factor / Frequency:  %s\n"
-                                "Persistence:               %s\n"
-                                "Luminance Threshold:       %s\n",
+                                "Iterations:            %s\n"
+                                "Luminance Threshold:   %s\n"
+                                "Scale / Frequency:     %s\n"
+                                "Persistence:           %s\n",
         buffer[0],
         buffer[1],    
         buffer[2],
@@ -225,6 +264,50 @@ namespace octet {
 
       // Render the overlay.
       overlay->render(vx, vy);
+    }
+
+    void draw_triangle() {
+      ref<color_shader> shader;
+      GLuint vertices;
+
+      shader = new color_shader();
+
+      glGenBuffers(1, &vertices);
+      glBindBuffer(GL_ARRAY_BUFFER, vertices);
+
+      // corners (vertices) of the triangle
+      static const float vertex_data[] = {
+        -0.5f, -0.5f, 0.0f,
+        0.5f, -0.5f, 0.0f,
+        0.0f,  0.5f, 0.0f,
+      };
+
+      glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_data), vertex_data, GL_STATIC_DRAW);
+      /// clear the background and the depth buffer
+      glClearColor(0, 0, 1, 1);
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+      /// allow Z buffer depth testing (closer objects are always drawn in front of far ones)
+      glEnable(GL_DEPTH_TEST);
+
+      // we use a unit matrix will not change the (-1..1, -1..1, -1..1) xyz space of OpenGL
+      mat4t modelToProjection;
+
+      // we use a simple solid color shader.
+      vec4 emissive_color(1, 1, 0, 1);
+      shader->render(modelToProjection, emissive_color);
+
+      // use vertex attribute 0 for our vertices (we could use 1, 2, 3 etc for other things)
+      glEnableVertexAttribArray(0);
+
+      // use the buffer we made earlier.
+      glBindBuffer(GL_ARRAY_BUFFER, vertices);
+
+      // tell OpenGL what kind of vertices we have
+      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), NULL);
+
+      // draw a triangle
+      glDrawArrays(GL_TRIANGLES, 0, 3);
     }
   };
 }
