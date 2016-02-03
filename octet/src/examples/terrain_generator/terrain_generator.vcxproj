@@ -217,7 +217,6 @@
     <ClInclude Include="..\..\shaders\texture_shader.h" />
     <ClInclude Include="noise.h" />
     <ClInclude Include="terrain_generator.h" />
-    <ClInclude Include="terrain_generator1.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\resources\mesh_builder.inl" />

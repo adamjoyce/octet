@@ -20,7 +20,7 @@ namespace octet {
       app_scene = new visual_scene();
       app_scene->create_default_camera_and_lights();
       app_scene->get_camera_instance(0)->set_far_plane(450);
-      app_scene->get_camera_instance(0)->get_node()->translate(vec3(grid_width * 0.5f, grid_height * 0.5f, 400));
+      app_scene->get_camera_instance(0)->get_node()->translate(vec3(grid_width * 0.5f, grid_height * 0.5f * 0.5f, 400));
 
       // Overlay text.
       aabb bb0(vec3(-210, 200, 0), vec3(160, 150, 0));
@@ -32,7 +32,7 @@ namespace octet {
       overlay->add_mesh_text(control_information);
 
       // Materials.
-      ground_mat = new material(vec4(1, 0, 0, 1));
+      ground_mat = new material(vec4(1, 1, 1, 1));
 
       // Assign the vector arrays space.
       meshes = std::vector<std::vector<mesh_instance>>();
@@ -87,13 +87,10 @@ namespace octet {
 
     // For overlay display.
     string controls = "Controls:\n"
-      "Load Files      = F1 - F8\n"
-      "+/- Iterate     = SPACE/BCKSPACE\n"
-      "+/- Angle       = TAB/CTRL\n"
-      "+/- Line Width  = INS/DEL\n"
-      "+/- Line Length = F9/ESC\n"
-      "+/- Zoom        = RIGHT/LEFT ARROW\n"
-      "Move Up/Down    = UP/DOWN ARROW\n";
+      "+/- Octaves     = F1/F2 or 1/2\n"
+      "+/- Threshold   = F3/F4\n"
+      "+/- Scale/Freq  = F5/F6 or 5/6\n"
+      "+/- Persistence = F7/F8 or 7/8\n";
 
     // Materials.
     material *ground_mat;
@@ -106,9 +103,9 @@ namespace octet {
     float persistence = 0.5f;
   
     // Increment variables.
-    int iterations_inc = 2;
+    int iterations_inc = 1;
     int threshold_inc = 10;
-    float scale_inc = 0.02f;
+    float scale_inc = 0.01f;
     float persistence_inc = 0.1f;
 
     // Terrain / noise grid dimensions.
@@ -213,7 +210,7 @@ namespace octet {
       if (is_key_going_down(key_f1)) {
         iterations += iterations_inc;
         adjustments = true;
-      } else if (is_key_going_down(key_f2)) {
+      } if (is_key_going_down(key_f2)) {
         iterations -= iterations_inc;
         adjustments = true;
       }
@@ -222,7 +219,7 @@ namespace octet {
       if (is_key_going_down(key_f3)) {
         luminance_threshold += threshold_inc;
         adjustments = true;
-      } else if (is_key_going_down(key_f4)) {
+      } if (is_key_going_down(key_f4)) {
         luminance_threshold -= threshold_inc;
         adjustments = true;
       }
@@ -231,7 +228,7 @@ namespace octet {
       if (is_key_going_down(key_f5)) {
         scale += scale_inc;
         adjustments = true;
-      } else if (is_key_going_down(key_f6)) {
+      } if (is_key_going_down(key_f6)) {
         scale -= scale_inc;
         adjustments = true;
       }
@@ -240,15 +237,14 @@ namespace octet {
       if (is_key_going_down(key_f7)) {
         persistence += persistence_inc;
         adjustments = true;
-      }
-      else if (is_key_going_down(key_f8)) {
+      } if (is_key_going_down(key_f8)) {
         persistence -= persistence_inc;
         adjustments = true;
       }
 
       // Redraw for any changes.
       if (adjustments) {
-        app_init();
+        generate_cave_noise();
       }
     }
 
@@ -260,13 +256,13 @@ namespace octet {
       // Write text.
       char buffer[5][256];
       sprintf(buffer[0], "%i", iterations);
-      sprintf(buffer[1], "%.4f", scale);
-      sprintf(buffer[2], "%.4f", persistence);
-      sprintf(buffer[3], "%i", luminance_threshold);
+      sprintf(buffer[1], "%i", luminance_threshold);
+      sprintf(buffer[2], "%.2f", scale);
+      sprintf(buffer[3], "%.2f", persistence);
 
       // Format the mesh.
       noise_information->format("Noise Information:\n"
-                                "Iterations:            %s\n"
+                                "Octaves:               %s\n"
                                 "Luminance Threshold:   %s\n"
                                 "Scale / Frequency:     %s\n"
                                 "Persistence:           %s\n",
