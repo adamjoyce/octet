@@ -1,4 +1,5 @@
 // A class used to generate 2D Simplex Noise.
+//
 // There is an implementation for Fractional Brownian motion to merge several
 // octaves.
 //
