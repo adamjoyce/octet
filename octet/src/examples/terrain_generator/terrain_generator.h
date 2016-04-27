@@ -51,8 +51,8 @@ namespace octet {
       noise.initialise_perms();
       
       // WINDOWS-ONLY code used to display noise maps in the console window - extremely inefficient.
-      console = GetConsoleWindow();
-      dc = GetDC(console);
+      //console = GetConsoleWindow();
+      //dc = GetDC(console);
 
       generate_terrain_grid();
       generate_height_line();
@@ -125,8 +125,8 @@ namespace octet {
     random rand;
 
     // WINDOWS-ONLY console variables.
-    HWND console;
-    HDC dc;
+    //HWND console;
+    //HDC dc;
 
     /// Generates a grid of ground meshes with dimenions grid_width by grid_height.
     void generate_terrain_grid() {
@@ -157,12 +157,12 @@ namespace octet {
           min_height = height_line[i];
         }
         // WINDOWS-ONLY.
-        draw_line_to_console(255);
+        //draw_line_to_console(255);
       }
     }
 
     /// WINDOWS-ONLY function that draws the generated height line in the console window.
-    void draw_line_to_console(int color) {
+    /*void draw_line_to_console(int color) {
       for (int i = 0; i < grid_width; i++) {
         int red = 0;
         for (int j = grid_width - 1 - min_height - 1; j > 255 - max_height; j--) {
@@ -172,7 +172,7 @@ namespace octet {
           }
         }
       }
-    }
+    }*/
 
     /// Generate noise for each grid cell and determine if ground should appear there.
     void generate_cave_noise() {
@@ -195,7 +195,7 @@ namespace octet {
             }
           }
           // WINDOWS-ONLY.
-          SetPixel(dc, j, i, RGB(luminance[i][j], luminance[i][j], luminance[i][j]));
+          //SetPixel(dc, j, i, RGB(luminance[i][j], luminance[i][j], luminance[i][j]));
         }
       }
     }
@@ -253,16 +253,6 @@ namespace octet {
       // Redraw for any changes.
       if (adjustments) {
         generate_cave_noise();
-      }
-    }
-
-    /// WINDOWS-ONLY blacks out the previous height line in the console.
-    /// Very inefficient, mainly used for 'quick' testing.
-    void remove_previous_height_line() {
-      for (int i = 0; i < height_line.size(); i++) {
-        for (int j = 0; j < grid_width; i++) {
-          SetPixel(dc, i + grid_width, j, RGB(0, 0, 0));
-        }
       }
     }
 
