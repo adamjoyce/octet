@@ -1,4 +1,4 @@
-#Terrain Generation using Simplex Noise – Adam Joyce
+#Terrain Generation using Simplex Noise
 
 In this write-up I will cover the concepts and algorithms I used to generate cave-like structures in two dimensional terrain. 
 
@@ -7,10 +7,10 @@ I began by identifying a type of noise generation that would be suitable to crea
 
 There are four main steps involved in implementing Simplex Noise: 
 
-*Coordinate Skewing<br/>
-*Simplicial Subdivision<br/>
-*Gradient Selection<br/>
-*Kernel Summation<br/>
+* Coordinate Skewing<br/>
+* Simplicial Subdivision<br/>
+* Gradient Selection<br/>
+* Kernel Summation<br/>
 
 ###Coordinate Skewing and Simplicial Subdivision  
 When using Simplex Noise the aim is to pick the simplest shape that can be repeated to fill the entire coordinate space for a given N-dimension.  For two dimensions, a triangle is the shape with the fewest number of corners that fits this criteria.  Equilateral triangles are traditionally used, with several of these side-by-side creating a grid of rhombi.  These rhombi can be thought of as regular axis-aligned hypercubes that have had their coordinates skewed.  Therefore to determine which triangular simplex a coordinate point falls into we need to skew our coordinate grid to form a grid of regular axis-aligned hypercubes.  We can then examine the transformed coordinates x and y to determine which hypercube the point falls into.  Furthermore, by also comparing the magnitudes of x and y we can distinguish if the point falls into the upper or lower triangle of the square.  Figure 1 depicts this process.   
