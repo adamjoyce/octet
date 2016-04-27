@@ -4,11 +4,19 @@ In this write-up I will cover the concepts and algorithms I used to generate cav
 
 ###Simplex Noise – noise.h  
 I began by identifying a type of noise generation that would be suitable to create the cave’s that would be located within my terrain.  Fairly early on I came across Perlin Noise – an academy award winning type of gradient noise developed by Ken Perlin in 1983.  Perlin Noise comes with a couple of key drawbacks: it has a large computational overhead at higher dimensions, and it can produce visually significant directional artifacts.  Since I am working with two dimensions, the first point is moot, but having the potential to expand the project efficiently into higher dimensions is beneficial.  Fortunately, Perlin developed another noise algorithm in 2001 which he called Simplex Noise.  Simplex Noise effectively alleviated the key two problems that plagued Perlin Noise, thus producing better scalability and cleaner noise images.  For these reasons I chose to go with Simplex noise for my implementation.  
-There are four main steps involved in implementing Simplex Noise:  Coordinate Skewing  Simplicial Subdivision  Gradient Selection  
-###Kernel Summation  
-Coordinate Skewing and Simplicial Subdivision  
+
+There are four main steps involved in implementing Simplex Noise: 
+
+*Coordinate Skewing
+*Simplicial Subdivision
+*Gradient Selection 
+*Kernel Summation  
+
+###Coordinate Skewing and Simplicial Subdivision  
 When using Simplex Noise the aim is to pick the simplest shape that can be repeated to fill the entire coordinate space for a given N-dimension.  For two dimensions, a triangle is the shape with the fewest number of corners that fits this criteria.  Equilateral triangles are traditionally used, with several of these side-by-side creating a grid of rhombi.  These rhombi can be thought of as regular axis-aligned hypercubes that have had their coordinates skewed.  Therefore to determine which triangular simplex a coordinate point falls into we need to skew our coordinate grid to form a grid of regular axis-aligned hypercubes.  We can then examine the transformed coordinates x and y to determine which hypercube the point falls into.  Furthermore, by also comparing the magnitudes of x and y we can distinguish if the point falls into the upper or lower triangle of the square.  Figure 1 depicts this process.   
-Once we have determined which simplex the point falls within, that simplex is composed of the vertices of an ordered edge traversal.  If the coordinate falls into the lower triangle the edge traversal reads (0,0) -> (1,0) -> (1,1) while if it is in the upper corner it reads (0,0) -> (0,1) -> (1,1).   
+Once we have determined which simplex the point falls within, that simplex is composed of the vertices of an ordered edge traversal.  If the coordinate falls into the lower triangle the edge traversal reads (0,0) -> (1,0) -> (1,1) while if it is in the upper corner it reads (0,0) -> (0,1) -> (1,1).  
+
+![Coordinate Skewing](https://raw.githubusercontent.com/adamjoyce/octet/terrain/octet/src/examples/terrain_generator/Images/coord_sewing.PNG "Coordinate Skewing")
    
 ###Gradient Selection and Kernel Summation  
 Each simplex vertex is then added back to the un-skewed base coordinate and hashed into a pseudorandom gradient direction.  For this project I used a permutation table to implement the hash.  
